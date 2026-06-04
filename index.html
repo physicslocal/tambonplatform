@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Tambon Platform - Admin Realtime</title>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Sarabun', sans-serif;
+            background-color: #f4f6f9;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h2 { text-align: center; color: #333; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input, select {
+            width: 100%; padding: 8px; box-sizing: border-box;
+            font-family: 'Sarabun', sans-serif; border: 1px solid #ddd; border-radius: 4px;
+        }
+        button {
+            background-color: #28a745; color: white; border: none; padding: 10px 15px;
+            font-family: 'Sarabun', sans-serif; cursor: pointer; border-radius: 4px; width: 100%; font-size: 16px;
+        }
+        button:hover { background-color: #218838; }
+        
+        .quiz-card {
+            border: 2px solid #007bff; padding: 15px; margin-top: 20px;
+            border-radius: 6px; background-color: #f8f9fa;
+        }
+        .quiz-card input, .quiz-card select { margin-bottom: 10px; background-color: #fff; }
+        .btn-update { background-color: #ffc107; color: #000; margin-top: 5px;}
+        .btn-update:hover { background-color: #e0a800; }
+        .btn-enter { background-color: #007bff; color: white; margin-top: 5px; }
+        .btn-enter:hover { background-color: #0069d9; }
+
+        /* ส่วนกล่องเช็กคะแนนผู้เข้าร่วม (อยู่ใต้ปุ่ม Enter) */
+        .score-box {
+            margin-top: 15px;
+            background-color: #ffffff;
+            border-top: 2px dashed #ccc;
+            padding-top: 10px;
+        }
+        .score-title { font-weight: bold; color: #495057; }
+        .score-list { padding-left: 20px; margin: 5px 0 0 0; color: #28a745; font-weight: bold; }
+        .no-score { color: #6c757d; font-style: italic; list-style-type: none; padding-left: 0; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Quiz Tambon Platform (Admin Realtime)</h2>
+    <hr>
+    
+    <div class="form-group">
+        <label>ชื่อชุดข้อสอบ (กรอกชื่อข้อสอบ):</label>
+        <input type="text" id="examNameInput" placeholder="ตัวอย่าง: ฟิสิกส์กลศาสตร์เบื้องต้น">
+    </div>
+    
+    <div class="form-group">
+        <label>ชื่อวิชา (เลือกแท็บวิชา):</label>
+        <select id="subjectSelect">
+            <option value="คณิตศาสตร์">คณิตศาสตร์</option>
+            <option value="ฟิสิกส์">ฟิสิกส์</option>
+            <option value="ดาราศาสตร์">ดาราศาสตร์</option>
+            <option value="ชีววิทยา">ชีววิทยา</option>
+            <option value="เคมี">เคมี</option>
+        </select>
+    </div>
+    
+    <div class="form-group">
+        <label>คะแนนข้อละ (ใส่ "-" ไว้ก่อนได้):</label>
+        <input type="text" id="scoreInput" value="-">
+    </div>
+    
+    <button id="btnCreate">สร้างชุดข้อสอบ</button>
+
+    <hr style="margin-top: 30px;">
+    <h3>รายการกล่องชุดข้อสอบที่รวมไว้ทั้งหมด (PAGE 6)</h3>
+    <div id="quizListContainer"></div> 
+</div>
+
+<script type="module">
+    import { database } from "./firebase-config.js";
+    import { ref, push, update, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+    const examNameInput = document.getElementById('examNameInput');
+    const subjectSelect = document.getElementById('subjectSelect');
+    const scoreInput = document.getElementById('scoreInput');
+    const btnCreate = document.getElementById('btnCreate');
+    const quizListContainer = document.getElementById('quizListContainer');
+
+    let globalQuizzes = {};
+    let globalScores = {};
+
+    // ดึงข้อมูลคะแนนผู้เล่นมาอัปเดตบนหน้าจอแบบ Realtime
+    const scoresRef = ref(database, 'player_sessions');
+    onValue(scoresRef, (snapshot) => {
+        globalScores = snapshot.val() || {};
+        renderAdminDashboard(); 
+    });
+
+    // ดึงข้อมูลชุดข้อสอบมาอัปเดตบนหน้าจอแบบ Realtime
+    const quizzesRef = ref(database, 'quizzes');
+    onValue(quizzesRef, (snapshot) => {
+        globalQuizzes = snapshot.val() || {};
+        renderAdminDashboard(); 
+    });
+
+    // ฟังก์ชันสร้างชุดข้อสอบ
+    btnCreate.addEventListener('click', () => {
+        const examName = examNameInput.value.trim();
+        const subject = subjectSelect.value;
+        const baseScore = scoreInput.value.trim();
+
+        if(!examName) {
+            alert('กรุณากรอกชื่อชุดข้อสอบด้วยครับ');
+            return;
+        }
+
+        const newQuizRef = push(ref(database, 'quizzes'));
+        update(newQuizRef, {
+            examName: examName,
+            subject: subject,
+            baseScorePerQuestion: baseScore,
+            createdAt: new Date().toISOString()
+        }).then(() => {
+            alert('สร้างชุดข้อสอบสำเร็จ!');
+            examNameInput.value = '';
+        });
+    });
+
+    // แสดงแผงควบคุมและส่วนเช็กคะแนนใต้ปุ่ม Enter
+    function renderAdminDashboard() {
+        quizListContainer.innerHTML = '';
+        const quizIds = Object.keys(globalQuizzes);
+        
+        if(quizIds.length === 0) {
+            quizListContainer.innerHTML = '<p>ยังไม่มีชุดข้อสอบในระบบ</p>';
+            return;
+        }
+
+        quizIds.forEach((quizId) => {
+            const quizData = globalQuizzes[quizId];
+            let scoreListHtml = '';
+            
+            // หาคะแนนผู้เล่นที่ตรงกับ ID ข้อสอบนี้
+            Object.keys(globalScores).forEach((sessionId) => {
+                const session = globalScores[sessionId];
+                if(session.quizId === quizId) {
+                    scoreListHtml += `<li class="score-list">คุณ ${session.playerName} ➔ ได้คะแนน: ${session.totalScore} คะแนน</li>`;
+                }
+            });
+
+            if(scoreListHtml === '') {
+                scoreListHtml = '<li class="no-score">❌ ยังไม่มีผู้เข้าร่วมทำข้อสอบชุดนี้</li>';
+            }
+
+            const card = document.createElement('div');
+            card.className = 'quiz-card';
+            card.innerHTML = `
+                <label>แก้ไขชื่อชุดข้อสอบ:</label>
+                <input type="text" id="editName-${quizId}" value="${quizData.examName}">
+                
+                <label>แก้ไขวิชา:</label>
+                <select id="editSubject-${quizId}">
+                    <option value="คณิตศาสตร์" ${quizData.subject === 'คณิตศาสตร์' ? 'selected' : ''}>คณิตศาสตร์</option>
+                    <option value="ฟิสิกส์" ${quizData.subject === 'ฟิสิกส์' ? 'selected' : ''}>ฟิสิกส์</option>
+                    <option value="ดาราศาสตร์" ${quizData.subject === 'ดาราศาสตร์' ? 'selected' : ''}>ดาราศาสตร์</option>
+                    <option value="ชีววิทยา" ${quizData.subject === 'ชีววิทยา' ? 'selected' : ''}>ชีววิทยา</option>
+                    <option value="เคมี" ${quizData.subject === 'เคมี' ? 'selected' : ''}>เคมี</option>
+                </select>
+                
+                <p>คะแนนข้อละเริ่มต้น: <strong>${quizData.baseScorePerQuestion}</strong></p>
+                
+                <button class="btn-update" data-id="${quizId}">💾 บันทึกการแก้ไขในกล่องนี้</button>
+                <button class="btn-enter" onclick="alert('กำลังเปิดหน้าเข้าจัดการข้อสอบภายใน ID: ${quizId}')">Enter เข้าไปจัดการข้อสอบ ➔</button>
+                
+                <div class="score-box">
+                    <div class="score-title">📊 ตารางเช็กคะแนนผู้เข้าร่วม:</div>
+                    <ul>${scoreListHtml}</ul>
+                </div>
+            `;
+            quizListContainer.appendChild(card);
+        });
+
+        // เปิดปุ่มบันทึกแก้ไขชื่อชุดข้อสอบแบบ Realtime
+        const updateButtons = document.querySelectorAll('.btn-update');
+        updateButtons.forEach(button => {
+            button.addEventListener('click', (e) => {
+                const id = e.target.getAttribute('data-id');
+                const updatedName = document.getElementById(`editName-${id}`).value;
+                const updatedSubject = document.getElementById(`editSubject-${id}`).value;
+
+                const specificQuizRef = ref(database, `quizzes/${id}`);
+                update(specificQuizRef, {
+                    examName: updatedName,
+                    subject: updatedSubject
+                }).then(() => {
+                    alert('อัปเดตข้อมูลสำเร็จแบบ Realtime!');
+                });
+            });
+        });
+    }
+</script>
+</body>
+</html>
