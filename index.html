@@ -3,214 +3,585 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quiz Tambon Platform - Admin Realtime</title>
-    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;700&display=swap" rel="stylesheet">
+    <title>Quiz Tambon Platform</title>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;700&display=swap" rel="stylesheet">
     
     <style>
+        /* --- 1. Minimal Yellow & Red Theme Styles --- */
+        :root {
+            --bg-color: #FDFBF7;       /* พื้นหลังขาวครีมมินิมอล */
+            --primary-red: #D62828;   /* แดงสไตล์โมเดิร์น */
+            --primary-yellow: #F4A261;/* เหลืองมัสตาร์ดอบอุ่น */
+            --accent-yellow: #E9C46A; /* เหลืองสว่างสำหรับไฮไลต์ */
+            --text-dark: #2B2D42;     /* สีตัวอักษรเข้ม */
+            --card-bg: #FFFFFF;
+            --border-color: #E0E0E0;
+        }
+
         body {
             font-family: 'Sarabun', sans-serif;
-            background-color: #f4f6f9;
-            padding: 20px;
+            background-color: var(--bg-color);
+            color: var(--text-dark);
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-        .container {
-            max-width: 600px;
+
+        /* ระบบจัดการสลับหน้า (Views) */
+        .view {
+            display: none; /* ซ่อนไว้ก่อน สลับหน้าด้วย JS */
+            max-width: 1200px;
             margin: 0 auto;
+            padding: 40px 20px;
+        }
+        .view.active {
+            display: block; /* หน้าที่กำลังใช้งานจะแสดงผล */
+        }
+
+        /* สไตล์มินิมอลทั่วไป */
+        h1, h2, h3 {
+            margin-top: 0;
+            color: var(--text-dark);
+            font-weight: 700;
+        }
+        .brand-title {
+            text-align: center;
+            font-size: 28px;
+            margin-bottom: 30px;
+            border-bottom: 3px solid var(--primary-yellow);
+            padding-bottom: 10px;
+            display: inline-block;
+        }
+        .center-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 70vh;
+        }
+        .minimal-box {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 30px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+        }
+
+        /* ฟอร์มและอินพุต */
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        input[type="text"], input[type="password"], select, textarea {
+            width: 100%;
+            padding: 12px;
+            box-sizing: border-box;
+            font-family: 'Sarabun', sans-serif;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background-color: #FCFCFA;
+            transition: all 0.3s;
+        }
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary-red);
+            background-color: #FFF;
+        }
+
+        /* ปุ่มต่างๆ */
+        button {
+            font-family: 'Sarabun', sans-serif;
+            font-weight: 500;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 15px;
+        }
+        .btn-primary {
+            background-color: var(--primary-red);
+            color: white;
+            width: 100%;
+        }
+        .btn-primary:hover { background-color: #b31F1F; }
+        
+        .btn-secondary {
+            background-color: var(--accent-yellow);
+            color: var(--text-dark);
+        }
+        .btn-secondary:hover { background-color: #dfba5c; }
+
+        .btn-link {
+            background: none;
+            color: #666;
+            text-decoration: underline;
+            margin-top: 15px;
+            font-size: 14px;
+        }
+
+        /* --- 3. Grid Layout (เรียงแนวนอน แถวละ 4 ชุด) --- */
+        .quiz-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr); /* บังคับ 4 คอลเลกชันแนวนอน */
+            gap: 20px;
+            margin-top: 20px;
+        }
+        @media (max-width: 1024px) { .quiz-grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 600px) { .quiz-grid { grid-template-columns: 1fr; } }
+
+        .quiz-card {
             background: white;
+            border: 1px solid var(--border-color);
+            border-top: 4px solid var(--primary-red); /* เส้นหัวกล่องสีแดง */
+            border-radius: 8px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.01);
+        }
+        .quiz-card input, .quiz-card select {
+            font-size: 13px;
+            padding: 6px;
+            margin-bottom: 8px;
+        }
+        .card-actions {
+            margin-top: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .card-actions button {
+            padding: 8px;
+            font-size: 13px;
+        }
+
+        /* ส่วนจัดหน้าจัดการข้อสอบ (Page 7) */
+        .manage-layout {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 30px;
+            margin-top: 20px;
+        }
+        .sidebar {
+            background: white;
+            border: 1px solid var(--border-color);
             padding: 20px;
             border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            height: fit-content;
         }
-        h2 { text-align: center; color: #333; }
-        .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; }
-        input, select {
-            width: 100%; padding: 8px; box-sizing: border-box;
-            font-family: 'Sarabun', sans-serif; border: 1px solid #ddd; border-radius: 4px;
+        .question-node {
+            padding: 10px;
+            margin-bottom: 8px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
-        button {
-            background-color: #28a745; color: white; border: none; padding: 10px 15px;
-            font-family: 'Sarabun', sans-serif; cursor: pointer; border-radius: 4px; width: 100%; font-size: 16px;
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #ccc; /* เริ่มต้นสีเทา */
         }
-        button:hover { background-color: #218838; }
-        
-        .quiz-card {
-            border: 2px solid #007bff; padding: 15px; margin-top: 20px;
-            border-radius: 6px; background-color: #f8f9fa;
+        .status-dot.active {
+            background-color: #28a745; /* กรอกเฉลยแล้วขึ้นสีเขียวตามเงื่อนไข */
         }
-        .quiz-card input, .quiz-card select { margin-bottom: 10px; background-color: #fff; }
-        .btn-update { background-color: #ffc107; color: #000; margin-top: 5px;}
-        .btn-update:hover { background-color: #e0a800; }
-        .btn-enter { background-color: #007bff; color: white; margin-top: 5px; }
-        .btn-enter:hover { background-color: #0069d9; }
 
-        /* ส่วนกล่องเช็กคะแนนผู้เข้าร่วม (อยู่ใต้ปุ่ม Enter) */
         .score-box {
             margin-top: 15px;
-            background-color: #ffffff;
-            border-top: 2px dashed #ccc;
-            padding-top: 10px;
+            background: #FFF8F8;
+            border-radius: 6px;
+            padding: 10px;
+            font-size: 13px;
         }
-        .score-title { font-weight: bold; color: #495057; }
-        .score-list { padding-left: 20px; margin: 5px 0 0 0; color: #28a745; font-weight: bold; }
-        .no-score { color: #6c757d; font-style: italic; list-style-type: none; padding-left: 0; }
+        .score-box ul { padding-left: 15px; margin: 5px 0 0 0; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h2>Quiz Tambon Platform (Admin Realtime)</h2>
-    <hr>
-    
-    <div class="form-group">
-        <label>ชื่อชุดข้อสอบ (กรอกชื่อข้อสอบ):</label>
-        <input type="text" id="examNameInput" placeholder="ตัวอย่าง: ฟิสิกส์กลศาสตร์เบื้องต้น">
+    <div id="view-landing" class="view active">
+        <div class="center-wrapper">
+            <span class="brand-title" style="color: var(--primary-red);">Quiz Tambon Platform</span>
+            <div class="minimal-box">
+                <h3>ผู้เข้าทดสอบ (Players)</h3>
+                <div class="form-group">
+                    <label>ชื่อ - นามสกุล / ชื่อเล่น :</label>
+                    <input type="text" id="playerNameInput" placeholder="กรอกชื่อของคุณที่นี่...">
+                </div>
+                <button class="btn-primary" style="background-color: var(--primary-yellow); color: #222;" onclick="alert('ระบบฝั่งผู้เล่นกำลังพัฒนาต่อในสเต็ปถัดไปครับ')">Enter เข้าสู่ระบบ</button>
+                
+                <center><button class="btn-link" onclick="switchView('view-admin-login')">เข้าสู่ระบบในฐานะ Admin</button></center>
+            </div>
+        </div>
     </div>
-    
-    <div class="form-group">
-        <label>ชื่อวิชา (เลือกแท็บวิชา):</label>
-        <select id="subjectSelect">
-            <option value="คณิตศาสตร์">คณิตศาสตร์</option>
-            <option value="ฟิสิกส์">ฟิสิกส์</option>
-            <option value="ดาราศาสตร์">ดาราศาสตร์</option>
-            <option value="ชีววิทยา">ชีววิทยา</option>
-            <option value="เคมี">เคมี</option>
-        </select>
+
+    <div id="view-admin-login" class="view">
+        <div class="center-wrapper">
+            <span class="brand-title" style="color: var(--primary-red);">Admin Authentication</span>
+            <div class="minimal-box">
+                <h3>ผู้ดูแลระบบ (Admin)</h3>
+                <div class="form-group">
+                    <label>Password :</label>
+                    <input type="password" id="adminPassword" placeholder="กรอกรหัสผ่านเพื่อเข้าใช้งาน...">
+                </div>
+                <button class="btn-primary" id="btnAdminLogin">Enter</button>
+                <center><button class="btn-link" onclick="switchView('view-landing')">กลับไปหน้าหลัก</button></center>
+            </div>
+        </div>
     </div>
-    
-    <div class="form-group">
-        <label>คะแนนข้อละ (ใส่ "-" ไว้ก่อนได้):</label>
-        <input type="text" id="scoreInput" value="-">
+
+    <div id="view-admin-dashboard" class="view">
+        <div style="display:flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border-color); padding-bottom: 15px;">
+            <h2>แผงควบคุมระบบจัดการชุดข้อสอบ (Admin)</h2>
+            <button class="btn-secondary" onclick="switchView('view-landing')">ออกจากระบบ Admin</button>
+        </div>
+
+        <div style="background: white; border: 1px solid var(--border-color); border-radius: 12px; padding: 25px; margin-top: 30px; max-width: 600px;">
+            <h3>➕ สร้างชุดข้อสอบใหม่</h3>
+            <div class="form-group">
+                <label>ชื่อชุดข้อสอบ (กรอกชื่อข้อสอบ):</label>
+                <input type="text" id="examNameInput" placeholder="เช่น: ฟิสิกส์กลศาสตร์เบื้องต้น ม.4">
+            </div>
+            <div class="form-group">
+                <label>ชื่อวิชา (เลือกแท็บวิชา):</label>
+                <select id="subjectSelect">
+                    <option value="คณิตศาสตร์">คณิตศาสตร์</option>
+                    <option value="ฟิสิกส์">ฟิสิกส์</option>
+                    <option value="ดาราศาสตร์">ดาราศาสตร์</option>
+                    <option value="ชีววิทยา">ชีววิทยา</option>
+                    <option value="เคมี">เคมี</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>คะแนนข้อละ (ใส่ "-" ไว้ก่อนได้หากยังไม่ต้องการกำหนด):</label>
+                <input type="text" id="scoreInput" value="-">
+            </div>
+            <button class="btn-primary" id="btnCreate" style="background-color: var(--primary-yellow); color: black; font-weight: bold;">สร้างชุดข้อสอบ</button>
+        </div>
+
+        <h3 style="margin-top: 40px;">📦 รายการกล่องชุดข้อสอบทั้งหมด (แก้ไขหัวข้อได้ตลอดเวลา)</h3>
+        <div id="quizListContainer" class="quiz-grid"></div>
     </div>
-    
-    <button id="btnCreate">สร้างชุดข้อสอบ</button>
 
-    <hr style="margin-top: 30px;">
-    <h3>รายการกล่องชุดข้อสอบที่รวมไว้ทั้งหมด (PAGE 6)</h3>
-    <div id="quizListContainer"></div> 
-</div>
+    <div id="view-admin-manage-quiz" class="view">
+        <div style="border-bottom: 2px solid var(--border-color); padding-bottom: 15px; margin-bottom: 20px;">
+            <button class="btn-secondary" onclick="switchView('view-admin-dashboard')" style="margin-bottom: 10px;">⬅ กลับไปหน้ารวมชุดข้อสอบ</button>
+            <h2 id="currentEditingTitle">ชุดข้อสอบ: กำลังโหลด...</h2>
+        </div>
 
-<script type="module">
-    import { database } from "./firebase-config.js";
-    import { ref, push, update, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        <div class="manage-layout">
+            <div class="sidebar">
+                <h4>รายการโจทย์ภายใน</h4>
+                <div id="questionNodesContainer">
+                    </div>
+                <button class="btn-secondary" id="btnAddNewQuestion" style="width: 100%; margin-top: 15px; font-size: 13px;">+ เพิ่มข้อถัดไป</button>
+            </div>
 
-    const examNameInput = document.getElementById('examNameInput');
-    const subjectSelect = document.getElementById('subjectSelect');
-    const scoreInput = document.getElementById('scoreInput');
-    const btnCreate = document.getElementById('btnCreate');
-    const quizListContainer = document.getElementById('quizListContainer');
+            <div style="background: white; border: 1px solid var(--border-color); padding: 30px; border-radius: 8px;">
+                <h3 id="questionFormTitle">จัดการรายละเอียดโจทย์</h3>
+                <input type="hidden" id="currentQuestionId">
+                
+                <div class="form-group">
+                    <label>ข้อที่ (ลำดับข้อ):</label>
+                    <input type="text" id="qNumInput" readonly style="background: #eee;">
+                </div>
 
-    let globalQuizzes = {};
-    let globalScores = {};
+                <div class="form-group">
+                    <label>ลิงก์รูปภาพที่แนบ (Image URL):</label>
+                    <input type="text" id="qImageInput" placeholder="วางลิงก์รูปภาพประกอบโจทย์ที่นี่...">
+                </div>
 
-    // ดึงข้อมูลคะแนนผู้เล่นมาอัปเดตบนหน้าจอแบบ Realtime
-    const scoresRef = ref(database, 'player_sessions');
-    onValue(scoresRef, (snapshot) => {
-        globalScores = snapshot.val() || {};
-        renderAdminDashboard(); 
-    });
+                <div class="form-group">
+                    <label>พิมพ์คำถาม/โจทย์ข้อสอบ :</label>
+                    <textarea id="qTextInput" rows="4" placeholder="พิมพ์โจทย์คำถาม... รองรับสัญลักษณ์คณิตศาสตร์ เช่น log(x) หรือตัวแกรีก"></textarea>
+                </div>
 
-    // ดึงข้อมูลชุดข้อสอบมาอัปเดตบนหน้าจอแบบ Realtime
-    const quizzesRef = ref(database, 'quizzes');
-    onValue(quizzesRef, (snapshot) => {
-        globalQuizzes = snapshot.val() || {};
-        renderAdminDashboard(); 
-    });
+                <div class="form-group">
+                    <label>กรอกคำตอบที่ถูกต้อง (เฉลย) :</label>
+                    <input type="text" id="qAnswerInput" placeholder="พิมพ์คำตอบที่ถูกต้องเพื่อใช้ตรวจคะแนน...">
+                </div>
 
-    // ฟังก์ชันสร้างชุดข้อสอบ
-    btnCreate.addEventListener('click', () => {
-        const examName = examNameInput.value.trim();
-        const subject = subjectSelect.value;
-        const baseScore = scoreInput.value.trim();
+                <div class="form-group">
+                    <label>กำหนดคะแนนเฉพาะข้อนี้ :</label>
+                    <input type="text" id="qScoreInput" value="5">
+                </div>
 
-        if(!examName) {
-            alert('กรุณากรอกชื่อชุดข้อสอบด้วยครับ');
-            return;
-        }
+                <button class="btn-primary" id="btnSaveQuestion">💾 บันทึกโจทย์และเฉลยข้อนี้</button>
+            </div>
+        </div>
+    </div>
 
-        const newQuizRef = push(ref(database, 'quizzes'));
-        update(newQuizRef, {
-            examName: examName,
-            subject: subject,
-            baseScorePerQuestion: baseScore,
-            createdAt: new Date().toISOString()
-        }).then(() => {
-            alert('สร้างชุดข้อสอบสำเร็จ!');
-            examNameInput.value = '';
+
+    <script type="module">
+        import { database } from "./firebase-config.js";
+        import { ref, push, update, onValue, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        // รวบรวมองค์ประกอบหน้าจอ
+        const views = document.querySelectorAll('.view');
+        let currentQuizId = ""; // เก็บ ID ข้อสอบที่กำลังเลือกเข้าไปจัดการภายในอยู่
+        let currentQuestionsList = {};
+
+        // ฟังก์ชันในการสลับหน้าจอ (แก้ปัญหาข้อ 2)
+        window.switchView = function(viewId) {
+            views.forEach(v => v.classList.remove('active'));
+            document.getElementById(viewId).classList.add('active');
+        };
+
+        // ระบบล็อกอินแอดมิน (จำลองรหัสผ่านอย่างง่ายเพื่อให้ตรงสเปกดีไซน์)
+        document.getElementById('btnAdminLogin').addEventListener('click', () => {
+            const pass = document.getElementById('adminPassword').value;
+            if(pass === "admin1234" || pass === "") { // ปล่อยว่างหรือใส่ตามต้องการเพื่อเข้าใช้งานทดสอบ
+                switchView('view-admin-dashboard');
+            } else {
+                alert('รหัสผ่านไม่ถูกต้องครับ');
+            }
         });
-    });
 
-    // แสดงแผงควบคุมและส่วนเช็กคะแนนใต้ปุ่ม Enter
-    function renderAdminDashboard() {
-        quizListContainer.innerHTML = '';
-        const quizIds = Object.keys(globalQuizzes);
-        
-        if(quizIds.length === 0) {
-            quizListContainer.innerHTML = '<p>ยังไม่มีชุดข้อสอบในระบบ</p>';
-            return;
-        }
+        // --- ส่วนแผงควบคุมหลักคุมกล่องข้อสอบ (PAGE 5 & 6) ---
+        const examNameInput = document.getElementById('examNameInput');
+        const subjectSelect = document.getElementById('subjectSelect');
+        const scoreInput = document.getElementById('scoreInput');
+        const btnCreate = document.getElementById('btnCreate');
+        const quizListContainer = document.getElementById('quizListContainer');
 
-        quizIds.forEach((quizId) => {
-            const quizData = globalQuizzes[quizId];
-            let scoreListHtml = '';
-            
-            // หาคะแนนผู้เล่นที่ตรงกับ ID ข้อสอบนี้
-            Object.keys(globalScores).forEach((sessionId) => {
-                const session = globalScores[sessionId];
-                if(session.quizId === quizId) {
-                    scoreListHtml += `<li class="score-list">คุณ ${session.playerName} ➔ ได้คะแนน: ${session.totalScore} คะแนน</li>`;
-                }
-            });
+        let globalQuizzes = {};
+        let globalScores = {};
 
-            if(scoreListHtml === '') {
-                scoreListHtml = '<li class="no-score">❌ ยังไม่มีผู้เข้าร่วมทำข้อสอบชุดนี้</li>';
+        // ดึงข้อมูลแบบ Realtime จากประวัติผู้เข้าสอบ
+        onValue(ref(database, 'player_sessions'), (snapshot) => {
+            globalScores = snapshot.val() || {};
+            renderAdminDashboard(); 
+        });
+
+        // ดึงข้อมูลแบบ Realtime จากรายชื่อชุดข้อสอบ
+        onValue(ref(database, 'quizzes'), (snapshot) => {
+            globalQuizzes = snapshot.val() || {};
+            renderAdminDashboard(); 
+        });
+
+        // กดปุ่มสร้างชุดข้อสอบใหม่
+        btnCreate.addEventListener('click', () => {
+            const examName = examNameInput.value.trim();
+            const subject = subjectSelect.value;
+            const baseScore = scoreInput.value.trim();
+
+            if(!examName) {
+                alert('กรุณากรอกชื่อชุดข้อสอบก่อนครับ');
+                return;
             }
 
-            const card = document.createElement('div');
-            card.className = 'quiz-card';
-            card.innerHTML = `
-                <label>แก้ไขชื่อชุดข้อสอบ:</label>
-                <input type="text" id="editName-${quizId}" value="${quizData.examName}">
-                
-                <label>แก้ไขวิชา:</label>
-                <select id="editSubject-${quizId}">
-                    <option value="คณิตศาสตร์" ${quizData.subject === 'คณิตศาสตร์' ? 'selected' : ''}>คณิตศาสตร์</option>
-                    <option value="ฟิสิกส์" ${quizData.subject === 'ฟิสิกส์' ? 'selected' : ''}>ฟิสิกส์</option>
-                    <option value="ดาราศาสตร์" ${quizData.subject === 'ดาราศาสตร์' ? 'selected' : ''}>ดาราศาสตร์</option>
-                    <option value="ชีววิทยา" ${quizData.subject === 'ชีววิทยา' ? 'selected' : ''}>ชีววิทยา</option>
-                    <option value="เคมี" ${quizData.subject === 'เคมี' ? 'selected' : ''}>เคมี</option>
-                </select>
-                
-                <p>คะแนนข้อละเริ่มต้น: <strong>${quizData.baseScorePerQuestion}</strong></p>
-                
-                <button class="btn-update" data-id="${quizId}">💾 บันทึกการแก้ไขในกล่องนี้</button>
-                <button class="btn-enter" onclick="alert('กำลังเปิดหน้าเข้าจัดการข้อสอบภายใน ID: ${quizId}')">Enter เข้าไปจัดการข้อสอบ ➔</button>
-                
-                <div class="score-box">
-                    <div class="score-title">📊 ตารางเช็กคะแนนผู้เข้าร่วม:</div>
-                    <ul>${scoreListHtml}</ul>
-                </div>
-            `;
-            quizListContainer.appendChild(card);
-        });
-
-        // เปิดปุ่มบันทึกแก้ไขชื่อชุดข้อสอบแบบ Realtime
-        const updateButtons = document.querySelectorAll('.btn-update');
-        updateButtons.forEach(button => {
-            button.addEventListener('click', (e) => {
-                const id = e.target.getAttribute('data-id');
-                const updatedName = document.getElementById(`editName-${id}`).value;
-                const updatedSubject = document.getElementById(`editSubject-${id}`).value;
-
-                const specificQuizRef = ref(database, `quizzes/${id}`);
-                update(specificQuizRef, {
-                    examName: updatedName,
-                    subject: updatedSubject
-                }).then(() => {
-                    alert('อัปเดตข้อมูลสำเร็จแบบ Realtime!');
-                });
+            const newQuizRef = push(ref(database, 'quizzes'));
+            update(newQuizRef, {
+                examName: examName,
+                subject: subject,
+                baseScorePerQuestion: baseScore,
+                createdAt: new Date().toISOString()
+            }).then(() => {
+                alert('สร้างชุดข้อสอบสำเร็จ!');
+                examNameInput.value = '';
             });
         });
-    }
-</script>
+
+        // ฟังก์ชันวาดกล่องข้อสอบ (แก้ปัญหาข้อ 3 - จัด Grid 4 คอลัมน์)
+        function renderAdminDashboard() {
+            quizListContainer.innerHTML = '';
+            const quizIds = Object.keys(globalQuizzes);
+            
+            if(quizIds.length === 0) {
+                quizListContainer.innerHTML = '<p style="grid-column: span 4; text-align:center; color:#888;">ยังไม่มีชุดข้อสอบในระบบ</p>';
+                return;
+            }
+
+            quizIds.forEach((quizId) => {
+                const quizData = globalQuizzes[quizId];
+                
+                // ค้นหาคะแนนผู้เล่นประจำชุดนี้
+                let scoreListHtml = '';
+                Object.keys(globalScores).forEach((sessionId) => {
+                    const session = globalScores[sessionId];
+                    if(session.quizId === quizId) {
+                        scoreListHtml += `<li>คุณ ${session.playerName}: <b>${session.totalScore}</b> คะแนน</li>`;
+                    }
+                });
+                if(!scoreListHtml) scoreListHtml = '<li style="color:#999; list-style:none;">ยังไม่มีผู้เข้าสอบ</li>';
+
+                const card = document.createElement('div');
+                card.className = 'quiz-card';
+                card.innerHTML = `
+                    <div>
+                        <input type="text" id="editName-${quizId}" value="${quizData.examName}">
+                        <select id="editSubject-${quizId}">
+                            <option value="คณิตศาสตร์" ${quizData.subject === 'คณิตศาสตร์' ? 'selected' : ''}>คณิตศาสตร์</option>
+                            <option value="ฟิสิกส์" ${quizData.subject === 'ฟิสิกส์' ? 'selected' : ''}>ฟิสิกส์</option>
+                            <option value="ดาราศาสตร์" ${quizData.subject === 'ดาราศาสตร์' ? 'selected' : ''}>ดาราศาสตร์</option>
+                            <option value="ชีววิทยา" ${quizData.subject === 'ชีววิทยา' ? 'selected' : ''}>ชีววิทยา</option>
+                            <option value="เคมี" ${quizData.subject === 'เคมี' ? 'selected' : ''}>เคมี</option>
+                        </select>
+                        <p style="margin: 5px 0; font-size: 13px; color: #555;">ข้อละ: ${quizData.baseScorePerQuestion} คะแนน</p>
+                    </div>
+                    
+                    <div class="card-actions">
+                        <button class="btn-update btn-secondary" data-id="${quizId}" style="width:100%;">💾 เซฟชื่อ/วิชา</button>
+                        <button class="btn-enter btn-primary" data-id="${quizId}" style="width:100%;">Enter จัดการโจทย์ ➔</button>
+                        
+                        <div class="score-box">
+                            <div style="font-weight:bold;">📊 สถิติคะแนน:</div>
+                            <ul>${scoreListHtml}</ul>
+                        </div>
+                    </div>
+                `;
+                quizListContainer.appendChild(card);
+            });
+
+            // ผูกมัดการเซฟแก้หัวข้อในกล่อง
+            document.querySelectorAll('.btn-update').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const id = e.target.getAttribute('data-id');
+                    const uName = document.getElementById(`editName-${id}`).value;
+                    const uSub = document.getElementById(`editSubject-${id}`).value;
+
+                    update(ref(database, `quizzes/${id}`), { examName: uName, subject: uSub }).then(() => {
+                        alert('อัปเดตข้อมูลกล่องนี้สำเร็จ!');
+                    });
+                });
+            });
+
+            // ผูกมัดปุ่ม Enter เพื่อเข้าไปหน้าจัดการโจทย์ (แก้ปัญหาข้อ 4)
+            document.querySelectorAll('.btn-enter').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const id = e.currentTarget.getAttribute('data-id');
+                    openManageQuizPage(id);
+                });
+            });
+        }
+
+
+        // --- ส่วนเปิดหน้าจัดการโจทย์ข้อสอบย่อยภายใน (PAGE 7 แก้ไขปัญหาข้อ 4) ---
+        function openManageQuizPage(quizId) {
+            currentQuizId = quizId;
+            const quizData = globalQuizzes[quizId];
+            document.getElementById('currentEditingTitle').innerText = `ชุดข้อสอบ: ${quizData.examName} (${quizData.subject})`;
+            
+            // ดึงข้อย่อยแบบ Realtime ภายใต้ path: quizzes/{quizId}/questions
+            onValue(ref(database, `quizzes/${quizId}/questions`), (snapshot) => {
+                currentQuestionsList = snapshot.val() || {};
+                renderQuestionNodes();
+            });
+
+            switchView('view-admin-manage-quiz');
+        }
+
+        // วาดแถบข้างปุ่มโจทย์ข้อ 1, 2, 3...
+        function renderQuestionNodes() {
+            const container = document.getElementById('questionNodesContainer');
+            container.innerHTML = '';
+            
+            const qIds = Object.keys(currentQuestionsList);
+            
+            // วนลูปวาดรายการข้อสอบย่อย
+            qIds.forEach((qId, index) => {
+                const qData = currentQuestionsList[qId];
+                const node = document.createElement('div');
+                node.className = 'question-node';
+                
+                // เงื่อนไข: ถ้าใส่คำตอบเฉลยแล้ว จะเปิดสีเขียวสว่างแอคทีฟขึ้นมา
+                const hasAnswer = qData.correctAnswer && qData.correctAnswer.trim() !== "";
+                
+                node.innerHTML = `
+                    <span>ข้อที่ ${qData.questionNumber}</span>
+                    <div class="status-dot ${hasAnswer ? 'active' : ''}"></div>
+                `;
+                
+                node.addEventListener('click', () => {
+                    fillQuestionForm(qId, qData);
+                });
+                container.appendChild(node);
+            });
+
+            // ถ้าไม่มีโจทย์อยู่เลย ให้ทำการกดสร้างข้อ 1 อัตโนมัติ
+            if(qIds.length === 0) {
+                setupNewQuestionForm(1);
+            } else {
+                // เลือกข้อแรกขึ้นมาโชว์ที่ฟอร์มไว้ก่อน
+                const firstQId = qIds[0];
+                fillQuestionForm(firstQId, currentQuestionsList[firstQId]);
+            }
+        }
+
+        // ฟังก์ชันล้างฟอร์มเพื่อเตรียมป้อนข้อสอบข้อใหม่
+        function setupNewQuestionForm(nextNumber) {
+            document.getElementById('questionFormTitle').innerText = `➕ เพิ่มโจทย์ใหม่ (ข้อที่ ${nextNumber})`;
+            document.getElementById('currentQuestionId').value = ""; // เคลียร์ ID เพื่อสร้างใหม่
+            document.getElementById('qNumInput').value = nextNumber;
+            document.getElementById('qImageInput').value = "";
+            document.getElementById('qTextInput').value = "";
+            document.getElementById('qAnswerInput').value = "";
+            
+            // นำคะแนนฐานเริ่มต้นของกล่องข้อสอบนั้นมาใช้
+            const baseScore = globalQuizzes[currentQuizId].baseScorePerQuestion;
+            document.getElementById('qScoreInput').value = baseScore === "-" ? "5" : baseScore;
+        }
+
+        // นำข้อมูลโจทย์ที่คลิกจากแถบซ้ายมาเติมในฟอร์มเพื่อแก้ไข
+        function fillQuestionForm(qId, qData) {
+            document.getElementById('questionFormTitle').innerText = `📝 แก้ไขโจทย์ (ข้อที่ ${qData.questionNumber})`;
+            document.getElementById('currentQuestionId').value = qId;
+            document.getElementById('qNumInput').value = qData.questionNumber;
+            document.getElementById('qImageInput').value = qData.imageUrl || "";
+            document.getElementById('qTextInput').value = qData.questionText || "";
+            document.getElementById('qAnswerInput').value = qData.correctAnswer || "";
+            document.getElementById('qScoreInput').value = qData.score || "5";
+        }
+
+        // ปุ่มคลิกสร้างข้อถัดไป
+        document.getElementById('btnAddNewQuestion').addEventListener('click', () => {
+            const nextNum = Object.keys(currentQuestionsList).length + 1;
+            setupNewQuestionForm(nextNum);
+        });
+
+        // บันทึกเนื้อหาโจทย์ย่อยลงคลัง Firebase Realtime
+        document.getElementById('btnSaveQuestion').addEventListener('click', () => {
+            let qId = document.getElementById('currentQuestionId').value;
+            const qNum = parseInt(document.getElementById('qNumInput').value);
+            const qImg = document.getElementById('qImageInput').value.trim();
+            const qText = document.getElementById('qTextInput').value.trim();
+            const qAns = document.getElementById('qAnswerInput').value.trim();
+            const qScore = document.getElementById('qScoreInput').value.trim();
+
+            if(!qText) {
+                alert('กรุณาพิมพ์คำถามด้วยครับ');
+                return;
+            }
+
+            // ถ้าไม่มี qId แสดงว่าเป็นข้อเพิ่มใหม่ ให้ push รหัสแบบสุ่มขึ้นระบบ
+            if(!qId) {
+                const targetRef = push(ref(database, `quizzes/${currentQuizId}/questions`));
+                qId = targetRef.key;
+            }
+
+            set(ref(database, `quizzes/${currentQuizId}/questions/${qId}`), {
+                questionNumber: qNum,
+                imageUrl: qImg,
+                questionText: qText,
+                correctAnswer: qAns,
+                score: qScore
+            }).then(() => {
+                alert(`บันทึกโจทย์ข้อที่ ${qNum} เรียบร้อยแล้ว!`);
+            });
+        });
+
+    </script>
 </body>
 </html>
