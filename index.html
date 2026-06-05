@@ -6,6 +6,9 @@
     <title>Quiz Tambon Platform</title>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;700&display=swap" rel="stylesheet">
     
+    <!-- MathLive: Professional Math Input (เส้นเศษส่วน, √, สัญลักษณ์) -->
+    <script defer src="https://unpkg.com/mathlive"></script>
+    
     <style>
         :root {
             --bg-color: #FDFBF7;
@@ -120,6 +123,21 @@
         .score-table th { padding:9px 12px; background:#F8FAFC; border:1px solid #E2E8F0; white-space:nowrap; }
         .score-table td { padding:8px 12px; border:1px solid #E2E8F0; text-align:center; }
         .score-table td.name-cell { text-align:left; font-weight:500; white-space:nowrap; }
+
+        /* MathLive math-field */
+        math-field {
+            display: block; width: 100%; min-height: 56px;
+            font-size: 22px; padding: 10px 14px;
+            border: 2px solid var(--border-color); border-radius: 8px;
+            background: #FCFCFA; box-sizing: border-box;
+        }
+        math-field:focus-within { border-color: var(--primary-red); background: #fff; outline: none; }
+
+        /* Math keyboard quick-buttons (TKPhO style) */
+        .math-kb { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; background: #F1F5F9; padding: 12px; border-radius: 10px; }
+        .kb-btn { padding: 8px 14px; background: white; border: 1px solid #CBD5E1; border-radius: 7px; cursor: pointer; font-size: 17px; font-family: 'Sarabun', sans-serif; transition: background 0.15s; }
+        .kb-btn:hover { background: #E2E8F0; }
+        .kb-btn.danger { background: #FEE2E2; color: #DC2626; border-color: #FECACA; }
         .td-correct { background:#DCFCE7; color:#166534; font-weight:700; }
         .td-wrong { background:#F1F5F9; color:#94A3B8; }
         .td-total { background:#FEF3C7; font-weight:700; }
@@ -466,7 +484,24 @@
             <p id="pQuestionText" style="font-size: 18px; line-height: 1.6; background: #FAF9F5; padding: 15px; border-radius: 8px; border-left: 4px solid var(--primary-yellow);"></p>
             <div class="form-group" style="margin-top: 20px;">
                 <label>พิมพ์คำตอบของคุณที่นี่:</label>
-                <input type="text" id="playerAnswerInput" placeholder="กรอกคำตอบ..." class="kb-target">
+                <math-field id="playerAnswerInput" style="border-color: var(--primary-yellow);"></math-field>
+                <div class="math-kb">
+                    <button class="kb-btn" onclick="playerIns('\\frac{#@}{#?}')">a/b</button>
+                    <button class="kb-btn" onclick="playerIns('\\sqrt{#@}')">√</button>
+                    <button class="kb-btn" onclick="playerIns('\\sqrt[3]{#@}')">∛</button>
+                    <button class="kb-btn" onclick="playerIns('^{#?}')">xⁿ</button>
+                    <button class="kb-btn" onclick="playerIns('\\pi')">π</button>
+                    <button class="kb-btn" onclick="playerIns('\\alpha')">α</button>
+                    <button class="kb-btn" onclick="playerIns('\\beta')">β</button>
+                    <button class="kb-btn" onclick="playerIns('\\theta')">θ</button>
+                    <button class="kb-btn" onclick="playerIns('\\infty')">∞</button>
+                    <button class="kb-btn" onclick="playerIns('\\times')">×</button>
+                    <button class="kb-btn" onclick="playerIns('ก')">ก</button>
+                    <button class="kb-btn" onclick="playerIns('ข')">ข</button>
+                    <button class="kb-btn" onclick="playerIns('ค')">ค</button>
+                    <button class="kb-btn" onclick="playerIns('ง')">ง</button>
+                    <button class="kb-btn danger" onclick="document.getElementById('playerAnswerInput').value=''">ล้าง</button>
+                </div>
             </div>
             <button class="btn-primary" id="btnSubmitAnswer" style="background-color: var(--primary-yellow); color: black; font-weight: bold;">ส่งคำตอบข้อนี้</button>
         </div>
@@ -540,7 +575,24 @@
                 </div>
                 <div class="form-group">
                     <label>กรอกคำตอบที่ถูกต้อง (เฉลย):</label>
-                    <input type="text" id="adminQAnswer" placeholder="พิมพ์เฉลยจริงประจำข้อนี้..." class="kb-target">
+                    <math-field id="adminQAnswer"></math-field>
+                    <div class="math-kb">
+                        <button class="kb-btn" onclick="adminIns('\\frac{#@}{#?}')">a/b</button>
+                        <button class="kb-btn" onclick="adminIns('\\sqrt{#@}')">√</button>
+                        <button class="kb-btn" onclick="adminIns('\\sqrt[3]{#@}')">∛</button>
+                        <button class="kb-btn" onclick="adminIns('^{#?}')">xⁿ</button>
+                        <button class="kb-btn" onclick="adminIns('\\pi')">π</button>
+                        <button class="kb-btn" onclick="adminIns('\\alpha')">α</button>
+                        <button class="kb-btn" onclick="adminIns('\\beta')">β</button>
+                        <button class="kb-btn" onclick="adminIns('\\theta')">θ</button>
+                        <button class="kb-btn" onclick="adminIns('\\infty')">∞</button>
+                        <button class="kb-btn" onclick="adminIns('\\times')">×</button>
+                        <button class="kb-btn" onclick="adminIns('ก')">ก</button>
+                        <button class="kb-btn" onclick="adminIns('ข')">ข</button>
+                        <button class="kb-btn" onclick="adminIns('ค')">ค</button>
+                        <button class="kb-btn" onclick="adminIns('ง')">ง</button>
+                        <button class="kb-btn danger" onclick="document.getElementById('adminQAnswer').value=''">ล้าง</button>
+                    </div>
                 </div>
             </div>
             <button class="btn-primary" id="btnAdminSaveQ">💾 บันทึกโจทย์และเฉลยข้อนี้</button>
@@ -1185,6 +1237,29 @@
             answers: answersUpdate, answers_raw: rawAnswersUpdate, totalScore: newTotalScore
         }).then(() => { alert(`ส่งคำตอบข้อที่ ${currentActiveQuestionNum} สำเร็จ!`); });
     });
+
+    // ========================
+    // MATHLIVE HELPERS
+    // ========================
+    window.playerIns = function(latex) {
+        const mf = document.getElementById('playerAnswerInput');
+        if(mf) { mf.focus(); mf.executeCommand(['insert', latex]); }
+    };
+    window.adminIns = function(latex) {
+        const mf = document.getElementById('adminQAnswer');
+        if(mf) { mf.focus(); mf.executeCommand(['insert', latex]); }
+    };
+
+    // Image error handler — แสดง placeholder แทนรูป ?
+    document.addEventListener('error', (e) => {
+        if(e.target.tagName === 'IMG') {
+            e.target.style.display = 'none';
+            const msg = document.createElement('p');
+            msg.style.cssText = 'color:#EF4444; font-size:13px; margin:5px 0;';
+            msg.innerText = '⚠️ โหลดรูปไม่ได้ — ตรวจสอบ URL หรือใช้ลิงก์แบบ Direct (ไม่ใช่ Google Drive preview)';
+            e.target.parentNode.insertBefore(msg, e.target.nextSibling);
+        }
+    }, true);
 </script>
 </body>
 </html>
