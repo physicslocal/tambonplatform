@@ -21,33 +21,14 @@
         body { font-family: 'Sarabun', sans-serif; background-color: var(--bg-color); color: var(--text-dark); margin: 0; padding: 0; }
 
         .view { position: relative; }
-        #view-landing::before, #view-admin-login::before {
-            content: '';
-            position: fixed;
-            inset: 0;
-            background-image: var(--bg-login, none);
-            background-size: cover;
-            background-position: center;
-            opacity: 0.3;
-            pointer-events: none;
-            z-index: -1;
-        }
-        #view-player-dashboard::before, #view-player-quiz::before {
-            content: '';
-            position: fixed;
-            inset: 0;
-            background-image: var(--bg-player, none);
-            background-size: cover;
-            background-position: center;
-            opacity: 0.3;
-            pointer-events: none;
-            z-index: -1;
-        }
+
+        /* ::before สำหรับทุก view — background-image จะถูก inject ผ่าน <style id="bgDynamicStyle"> */
+        #view-landing::before, #view-admin-login::before,
+        #view-player-dashboard::before, #view-player-quiz::before,
         #view-admin-dashboard::before, #view-admin-manage-quiz::before {
             content: '';
             position: fixed;
             inset: 0;
-            background-image: var(--bg-admin, none);
             background-size: cover;
             background-position: center;
             opacity: 0.3;
@@ -186,80 +167,31 @@
         .tab-btn { transition: transform 0.15s cubic-bezier(0.34,1.56,0.64,1), background 0.2s; }
         .tab-btn:hover { transform: scale(1.07); }
 
-        /* ===== IMAGE ZOOM OVERLAY — inline 1.5x scale ===== */
-        .img-zoomable {
-            cursor: zoom-in;
-            transition: transform 0.25s cubic-bezier(0.34,1.2,0.64,1);
-            position: relative;
-            z-index: 1;
-        }
-        /* Zoom overlay backdrop */
-        #imgZoomOverlay {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.0);
-            z-index: 9000;
-            align-items: center;
-            justify-content: center;
-            cursor: zoom-out;
-            transition: background 0.25s;
-        }
-        #imgZoomOverlay.active {
-            display: flex;
-            background: rgba(0,0,0,0.5);
-        }
-        /* The zoomed image wrapper — sits over original, scaled 1.5x */
-        #imgZoomWrapper {
-            position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        #imgZoomTarget {
-            border-radius: 12px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
-            transform: scale(1.5);
-            transform-origin: center center;
-            animation: zoomInScale 0.22s cubic-bezier(0.34,1.2,0.64,1) forwards;
-            max-width: 80vw;
-            max-height: 80vh;
-            object-fit: contain;
-        }
-        @keyframes zoomInScale {
-            from { transform: scale(1); opacity: 0.7; }
-            to { transform: scale(1.5); opacity: 1; }
-        }
-        #imgZoomClose {
-            position: fixed; top: 20px; right: 24px;
-            background: rgba(255,255,255,0.15); color: white;
-            border: 2px solid rgba(255,255,255,0.4);
-            border-radius: 50%; width: 44px; height: 44px;
-            font-size: 22px; cursor: pointer; display: flex;
-            align-items: center; justify-content: center;
-            backdrop-filter: blur(4px);
-            transition: background 0.2s, transform 0.15s;
-            z-index: 9001;
-        }
+        /* ===== IMAGE ZOOM OVERLAY ===== */
+        .img-zoomable { cursor: zoom-in; transition: transform 0.25s cubic-bezier(0.34,1.2,0.64,1); position: relative; z-index: 1; }
+        #imgZoomOverlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.0); z-index: 9000; align-items: center; justify-content: center; cursor: zoom-out; transition: background 0.25s; }
+        #imgZoomOverlay.active { display: flex; background: rgba(0,0,0,0.5); }
+        #imgZoomWrapper { position: relative; display: flex; align-items: center; justify-content: center; }
+        #imgZoomTarget { border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,0.4); transform: scale(1.5); transform-origin: center center; animation: zoomInScale 0.22s cubic-bezier(0.34,1.2,0.64,1) forwards; max-width: 80vw; max-height: 80vh; object-fit: contain; }
+        @keyframes zoomInScale { from { transform: scale(1); opacity: 0.7; } to { transform: scale(1.5); opacity: 1; } }
+        #imgZoomClose { position: fixed; top: 20px; right: 24px; background: rgba(255,255,255,0.15); color: white; border: 2px solid rgba(255,255,255,0.4); border-radius: 50%; width: 44px; height: 44px; font-size: 22px; cursor: pointer; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px); transition: background 0.2s, transform 0.15s; z-index: 9001; }
         #imgZoomClose:hover { background: rgba(255,255,255,0.3); transform: scale(1.1); }
 
-        /* ===== SCORE TABLE NAME CELL HOVER/DELETE ===== */
+        /* ===== SCORE TABLE NAME CELL ===== */
         .name-cell { cursor: pointer; }
         .name-cell:hover { text-decoration: underline; color: var(--primary-dark); }
 
         /* ===== CLEAR SCORES BUTTON ===== */
-        #btnClearAllScores {
-            background: #EF4444; color: white;
-            border: none; border-radius: 8px;
-            padding: 7px 14px; font-size: 13px;
-            cursor: pointer; font-family: 'Sarabun', sans-serif;
-        }
+        #btnClearAllScores { background: #EF4444; color: white; border: none; border-radius: 8px; padding: 7px 14px; font-size: 13px; cursor: pointer; font-family: 'Sarabun', sans-serif; }
         #btnClearAllScores:hover { background: #DC2626; }
     </style>
+
+    <!-- ★ BG Dynamic Style — inject โดยตรง แก้ปัญหา Desktop ไม่ repaint CSS variable -->
+    <style id="bgDynamicStyle"></style>
 </head>
 <body>
 
-<!-- IMAGE ZOOM OVERLAY — inline 1.5x, click outside to close -->
+<!-- IMAGE ZOOM OVERLAY -->
 <div id="imgZoomOverlay" onclick="closeImgZoom(event)">
     <button id="imgZoomClose" onclick="closeImgZoom(null, true)">✕</button>
     <div id="imgZoomWrapper">
@@ -594,11 +526,8 @@
     <button onclick="applyBgSettings()" style="width:100%;background:var(--primary-dark);color:white;border:none;border-radius:8px;padding:11px;font-size:15px;cursor:pointer;font-family:'Sarabun',sans-serif;font-weight:600;margin-top:8px;">✅ ยืนยันเปลี่ยนพื้นหลัง</button>
 </div>
 
-<!-- ===== IMAGE ZOOM: global functions ===== -->
+<!-- IMAGE ZOOM global functions -->
 <script>
-    // ============================================================
-    // IMAGE ZOOM — 1.5x scale overlay, click outside to close
-    // ============================================================
     window.openImgZoom = function(imgEl) {
         const src = typeof imgEl === 'string' ? imgEl : imgEl.src;
         if (!src || src === window.location.href) return;
@@ -613,10 +542,8 @@
         const overlay = document.getElementById('imgZoomOverlay');
         overlay.classList.remove('active');
         document.body.style.overflow = '';
-        // reset src after animation
         setTimeout(() => { document.getElementById('imgZoomTarget').src = ''; }, 300);
     };
-    // Close on Escape key
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') closeImgZoom(null, true);
     });
@@ -643,18 +570,56 @@
     const ADMIN_VIEWS = ['view-admin-dashboard', 'view-admin-manage-quiz'];
 
     // ============================================================
-    // BG Settings — stored in Firebase for cross-device sync
+    // ★ BG Settings — Firebase sync + compress + inject <style> โดยตรง
+    //   แก้ปัญหา Desktop ไม่ repaint เมื่อใช้ CSS variable กับ ::before
     // ============================================================
-    const bgKeys = { login: '--bg-login', player: '--bg-player', admin: '--bg-admin' };
     const bgData = { login: null, player: null, admin: null };
     const BG_DB_PATH = 'app_settings/backgrounds';
 
-    function applyBgVar(type, dataUrl) {
-        document.documentElement.style.setProperty(bgKeys[type], `url('${dataUrl}')`);
+    // Compress รูปก่อน upload — max 1200px wide, JPEG quality 0.75
+    function compressImage(dataUrl, maxWidth, quality) {
+        return new Promise((resolve) => {
+            const img = new Image();
+            img.onload = function() {
+                let w = img.width, h = img.height;
+                if (w > maxWidth) { h = Math.round(h * maxWidth / w); w = maxWidth; }
+                const canvas = document.createElement('canvas');
+                canvas.width = w; canvas.height = h;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, w, h);
+                resolve(canvas.toDataURL('image/jpeg', quality));
+            };
+            img.src = dataUrl;
+        });
     }
-    function removeBgVar(type) {
-        document.documentElement.style.removeProperty(bgKeys[type]);
+
+    // Inject CSS background โดยตรงผ่าน <style id="bgDynamicStyle">
+    // แทนการใช้ CSS variable — แก้ปัญหา Desktop browser ไม่ repaint ::before pseudo-element
+    function rebuildBgStyle() {
+        const styleEl = document.getElementById('bgDynamicStyle');
+        if (!styleEl) return;
+        let css = '';
+        if (bgData.login) {
+            css += `
+            #view-landing::before, #view-admin-login::before {
+                background-image: url('${bgData.login}') !important;
+            }`;
+        }
+        if (bgData.player) {
+            css += `
+            #view-player-dashboard::before, #view-player-quiz::before {
+                background-image: url('${bgData.player}') !important;
+            }`;
+        }
+        if (bgData.admin) {
+            css += `
+            #view-admin-dashboard::before, #view-admin-manage-quiz::before {
+                background-image: url('${bgData.admin}') !important;
+            }`;
+        }
+        styleEl.textContent = css;
     }
+
     function showBgPreview(type, dataUrl) {
         const cap = type.charAt(0).toUpperCase() + type.slice(1);
         const preview = document.getElementById('bg' + cap + 'Preview');
@@ -670,31 +635,32 @@
         if (clearBtn) clearBtn.style.display = 'none';
     }
 
-    // Listen for bg changes from Firebase in real-time (cross-device sync)
+    // ★ Real-time listener — sync ทุกอุปกรณ์ทันทีเมื่อ Firebase เปลี่ยน
     onValue(ref(database, BG_DB_PATH), (snap) => {
         const data = snap.val() || {};
         ['login', 'player', 'admin'].forEach(type => {
             if (data[type]) {
-                applyBgVar(type, data[type]);
                 bgData[type] = data[type];
                 showBgPreview(type, data[type]);
             } else {
-                removeBgVar(type);
                 bgData[type] = null;
                 hideBgPreview(type);
             }
         });
+        rebuildBgStyle(); // Apply ทั้งหมดในครั้งเดียว
     });
 
     function setupBgFile(type) {
         const cap = type.charAt(0).toUpperCase() + type.slice(1);
-        document.getElementById('bg' + cap + 'File').addEventListener('change', function(e) {
+        document.getElementById('bg' + cap + 'File').addEventListener('change', async function(e) {
             const file = e.target.files[0];
             if (!file) return;
             const reader = new FileReader();
-            reader.onload = function(ev) {
-                bgData[type] = ev.target.result;
-                showBgPreview(type, ev.target.result);
+            reader.onload = async function(ev) {
+                // Compress ก่อนเสมอ ลดขนาดจาก ~10MB เหลือ ~200-400KB
+                const compressed = await compressImage(ev.target.result, 1200, 0.75);
+                bgData[type] = compressed;
+                showBgPreview(type, compressed);
             };
             reader.readAsDataURL(file);
         });
@@ -704,12 +670,10 @@
     window.clearBg = function(type) {
         bgData[type] = null;
         hideBgPreview(type);
+        rebuildBgStyle();
         const cap = type.charAt(0).toUpperCase() + type.slice(1);
         document.getElementById('bg' + cap + 'File').value = '';
-        removeBgVar(type);
-        // Save null to Firebase
-        const updateObj = {};
-        updateObj[type] = null;
+        const updateObj = {}; updateObj[type] = null;
         update(ref(database, BG_DB_PATH), updateObj);
     };
 
@@ -717,15 +681,12 @@
         let changed = false;
         const updateObj = {};
         ['login', 'player', 'admin'].forEach(type => {
-            if (bgData[type]) {
-                updateObj[type] = bgData[type];
-                changed = true;
-            }
+            if (bgData[type]) { updateObj[type] = bgData[type]; changed = true; }
         });
         if (!changed) { alert('กรุณาเลือกรูปภาพอย่างน้อย 1 ช่องก่อนครับ'); return; }
         update(ref(database, BG_DB_PATH), updateObj)
             .then(() => alert('เปลี่ยนพื้นหลังสำเร็จ! ✅ ทุกอุปกรณ์จะได้รับการอัปเดต'))
-            .catch(() => alert('เกิดข้อผิดพลาดในการบันทึกพื้นหลัง'));
+            .catch((err) => alert('เกิดข้อผิดพลาด: ' + err.message));
     };
 
     document.getElementById('btnToggleBgPanel').addEventListener('click', function() {
@@ -945,8 +906,7 @@
     let scoreShowRawAnswers = false;
 
     function getMergedSessions(quizId) {
-        const rawSessions = Object.entries(globalScores)
-            .filter(([, s]) => s.quizId === quizId);
+        const rawSessions = Object.entries(globalScores).filter(([, s]) => s.quizId === quizId);
         const quizData = globalQuizzes[quizId];
         const mergedMap = {};
         rawSessions.forEach(([sessionKey, s]) => {
@@ -976,7 +936,6 @@
         const questions = quizData.questions
             ? Object.entries(quizData.questions).sort((a,b) => (a[1].questionNumber||0) - (b[1].questionNumber||0))
             : [];
-
         const mergedMap = getMergedSessions(quizId);
         let sessions = Object.values(mergedMap);
         if (scoreSortMode === 'name') sessions.sort((a,b) => (a.playerName||'').localeCompare(b.playerName||'', 'th'));
@@ -1007,8 +966,6 @@
             });
         }
         document.getElementById('scoreTable').innerHTML = `<thead>${thead}</thead><tbody>${tbody}</tbody>`;
-
-        // Attach click handler for name-cell (delete individual player)
         document.querySelectorAll('#scoreTable .name-cell').forEach(cell => {
             cell.addEventListener('click', () => {
                 const playerName = decodeURIComponent(cell.getAttribute('data-playername'));
@@ -1021,7 +978,6 @@
         });
     }
 
-    // Delete a single player's sessions for this quiz
     async function deleteSinglePlayer(playerName, quizId) {
         const entries = Object.entries(globalScores)
             .filter(([, s]) => s.quizId === quizId && (s.playerName || '').trim() === playerName.trim());
@@ -1030,7 +986,6 @@
         }
     }
 
-    // Clear ALL scores for a quiz
     document.getElementById('btnClearAllScores').addEventListener('click', () => {
         if (!currentScoreTableQuizId) return;
         const quizName = globalQuizzes[currentScoreTableQuizId]?.examName || 'ชุดข้อสอบนี้';
@@ -1393,12 +1348,9 @@
         if (numA !== null && numB !== null) {
             if (Math.abs(numA - numB) < 1e-9) return true;
         }
-        try {
-            if (symbolicEquivalent(input, correct)) return true;
-        } catch(e) {}
+        try { if (symbolicEquivalent(input, correct)) return true; } catch(e) {}
         return false;
     }
-
     function latexToJS(s) {
         return s.trim()
             .replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '($1)/($2)')
@@ -1419,7 +1371,6 @@
             .replace(/([A-Za-z])\(/g, '$1*(')
             .replace(/\)([A-Za-z0-9])/g, ')*$1');
     }
-
     const MATH_BUILTINS = new Set(['Math','PI','sqrt','cbrt','pow','abs','sin','cos','tan','log','exp','E','Infinity','floor','ceil','round','max','min']);
     function extractVars(jsExpr) {
         const matches = [...jsExpr.matchAll(/\b([a-zA-Z_][a-zA-Z0-9_]*)\b/g)];
