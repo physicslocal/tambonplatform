@@ -13,6 +13,34 @@
         }
         * { box-sizing: border-box; }
         body { font-family: 'Sarabun', sans-serif; background-color: var(--bg-color); color: var(--text-dark); margin: 0; padding: 0; }
+
+        /* Background image overlay system */
+        .view { position: relative; }
+        .view::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image: var(--view-bg-image, none);
+            background-size: cover;
+            background-position: center;
+            opacity: 0.3;
+            pointer-events: none;
+            z-index: -1;
+        }
+        #view-landing::before { background-image: var(--bg-login, none); }
+        #view-admin-login::before { background-image: var(--bg-login, none); }
+        #view-player-dashboard::before, #view-player-quiz::before { background-image: var(--bg-player, none); }
+        #view-admin-dashboard::before, #view-admin-manage-quiz::before { background-image: var(--bg-admin, none); }
+
+        /* BG Settings Panel */
+        #bgSettingsPanel { display:none; position:fixed; bottom:20px; right:20px; background:white; border-radius:16px; padding:20px; width:320px; box-shadow:0 8px 40px rgba(0,0,0,0.18); border:1px solid var(--border-color); z-index:5000; }
+        #bgSettingsPanel h4 { margin:0 0 14px; font-size:15px; color:var(--primary-red); }
+        .bg-upload-row { margin-bottom:12px; }
+        .bg-upload-row label { font-size:13px; font-weight:600; margin-bottom:4px; display:block; }
+        .bg-upload-row input[type=file] { width:100%; font-size:12px; }
+        .bg-upload-row .bg-preview { width:100%; height:60px; object-fit:cover; border-radius:6px; margin-top:6px; display:none; border:1px solid var(--border-color); }
+        #btnToggleBgPanel { position:fixed; bottom:20px; right:20px; background:var(--primary-red); color:white; border:none; border-radius:50%; width:50px; height:50px; font-size:22px; cursor:pointer; z-index:4999; box-shadow:0 4px 14px rgba(0,0,0,0.2); transition:0.2s; }
+        #btnToggleBgPanel:hover { background:#B31F1F; }
         .view { display: none; max-width: 1400px; margin: 0 auto; padding: 30px 20px; }
         .view.active { display: block; }
         .brand-title { text-align: center; font-size: 32px; font-weight: 700; margin-bottom: 25px; color: var(--primary-red); border-bottom: 4px solid var(--primary-yellow); display: inline-block; padding-bottom: 5px; }
@@ -93,6 +121,9 @@
         .img-upload-label { font-size: 14px; color: #64748B; }
         .img-upload-label span { color: var(--primary-red); font-weight: 600; cursor: pointer; }
         .img-clear-btn { background: #EF4444; color: white; border: none; border-radius: 6px; padding: 5px 12px; font-size: 12px; cursor: pointer; margin-top: 6px; font-family: 'Sarabun', sans-serif; display: none; }
+        .btn-toggle-answers { background: #6366F1; color: white; font-size: 13px; padding: 7px 14px; border-radius: 8px; border: none; cursor: pointer; font-family: 'Sarabun', sans-serif; transition: 0.2s; }
+        .btn-toggle-answers.show-raw { background: #0891B2; }
+        .td-raw-answer { background: #F8FAFC; color: #334155; font-size: 13px; }
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; z-index: 2000; }
         .modal-box { background: white; border-radius: 16px; padding: 30px; max-width: 360px; width: 90%; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
         .modal-box h3 { margin: 0 0 10px; font-size: 20px; }
@@ -127,6 +158,7 @@
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; flex-wrap:wrap; gap:10px;">
             <h3 id="scoreTableTitle" style="margin:0; color:var(--primary-red);">📊 คะแนนนักเรียน</h3>
             <div style="display:flex; gap:8px; align-items:center;">
+                <button id="btnToggleAnswers" class="btn-toggle-answers">👁 ดูคำตอบที่กรอก</button>
                 <button id="btnSortName" style="background:#EEF2F8; border:1px solid #CBD5E1; color:#374151; padding:7px 14px; border-radius:8px; font-size:13px; cursor:pointer; font-family:'Sarabun',sans-serif;">เรียงตามชื่อ ▲</button>
                 <button id="btnSortScore" style="background:#EEF2F8; border:1px solid #CBD5E1; color:#374151; padding:7px 14px; border-radius:8px; font-size:13px; cursor:pointer; font-family:'Sarabun',sans-serif;">เรียงตามคะแนน</button>
                 <button id="btnCloseScoreTable" style="background:#EF4444;color:white;border:none;border-radius:8px;padding:7px 16px;cursor:pointer;font-size:15px;font-family:'Sarabun',sans-serif;">✕ ปิด</button>
@@ -378,6 +410,100 @@
     </div>
 </div>
 
+<!-- BG SETTINGS PANEL -->
+<button id="btnToggleBgPanel" title="ตั้งค่าพื้นหลัง">🖼</button>
+<div id="bgSettingsPanel">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+        <h4 style="margin:0;">🖼 ตั้งค่าพื้นหลัง</h4>
+        <button onclick="document.getElementById('bgSettingsPanel').style.display='none'; document.getElementById('btnToggleBgPanel').style.display='flex';" style="background:none;border:none;font-size:20px;cursor:pointer;color:#888;">✕</button>
+    </div>
+    <div class="bg-upload-row">
+        <label>🔐 พื้นหลังหน้า Login</label>
+        <input type="file" id="bgLoginFile" accept="image/*">
+        <img id="bgLoginPreview" class="bg-preview">
+        <button onclick="clearBg('login')" style="font-size:11px;padding:3px 8px;margin-top:4px;background:#EF4444;color:white;border:none;border-radius:4px;cursor:pointer;font-family:'Sarabun',sans-serif;display:none;" id="bgLoginClear">ลบรูป</button>
+    </div>
+    <div class="bg-upload-row">
+        <label>👤 พื้นหลังนักเรียน (Player)</label>
+        <input type="file" id="bgPlayerFile" accept="image/*">
+        <img id="bgPlayerPreview" class="bg-preview">
+        <button onclick="clearBg('player')" style="font-size:11px;padding:3px 8px;margin-top:4px;background:#EF4444;color:white;border:none;border-radius:4px;cursor:pointer;font-family:'Sarabun',sans-serif;display:none;" id="bgPlayerClear">ลบรูป</button>
+    </div>
+    <div class="bg-upload-row">
+        <label>⚙️ พื้นหลัง Admin</label>
+        <input type="file" id="bgAdminFile" accept="image/*">
+        <img id="bgAdminPreview" class="bg-preview">
+        <button onclick="clearBg('admin')" style="font-size:11px;padding:3px 8px;margin-top:4px;background:#EF4444;color:white;border:none;border-radius:4px;cursor:pointer;font-family:'Sarabun',sans-serif;display:none;" id="bgAdminClear">ลบรูป</button>
+    </div>
+    <button onclick="applyBgSettings()" style="width:100%;background:var(--primary-red);color:white;border:none;border-radius:8px;padding:11px;font-size:15px;cursor:pointer;font-family:'Sarabun',sans-serif;font-weight:600;margin-top:8px;">✅ ยืนยันเปลี่ยนพื้นหลัง</button>
+</div>
+
+<script>
+    // BG Settings
+    const bgData = { login: null, player: null, admin: null };
+    const bgKeys = { login: '--bg-login', player: '--bg-player', admin: '--bg-admin' };
+
+    function setupBgFile(type) {
+        const fileInput = document.getElementById(`bg${type.charAt(0).toUpperCase()+type.slice(1)}File`);
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = function(ev) {
+                bgData[type] = ev.target.result;
+                const preview = document.getElementById(`bg${type.charAt(0).toUpperCase()+type.slice(1)}Preview`);
+                preview.src = ev.target.result;
+                preview.style.display = 'block';
+                document.getElementById(`bg${type.charAt(0).toUpperCase()+type.slice(1)}Clear`).style.display = 'inline-block';
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+    setupBgFile('login'); setupBgFile('player'); setupBgFile('admin');
+
+    window.clearBg = function(type) {
+        bgData[type] = null;
+        const cap = type.charAt(0).toUpperCase()+type.slice(1);
+        document.getElementById(`bg${cap}Preview`).style.display = 'none';
+        document.getElementById(`bg${cap}Preview`).src = '';
+        document.getElementById(`bg${cap}File`).value = '';
+        document.getElementById(`bg${cap}Clear`).style.display = 'none';
+    };
+
+    window.applyBgSettings = function() {
+        const root = document.documentElement;
+        ['login','player','admin'].forEach(type => {
+            if(bgData[type]) {
+                root.style.setProperty(bgKeys[type], `url('${bgData[type]}')`);
+                localStorage.setItem(`quizBg_${type}`, bgData[type]);
+            } else if(bgData[type] === null && document.getElementById(`bg${type.charAt(0).toUpperCase()+type.slice(1)}Preview`).src === '') {
+                root.style.removeProperty(bgKeys[type]);
+                localStorage.removeItem(`quizBg_${type}`);
+            }
+        });
+        alert('เปลี่ยนพื้นหลังสำเร็จ! ✅');
+    };
+
+    // Restore saved backgrounds
+    ['login','player','admin'].forEach(type => {
+        const saved = localStorage.getItem(`quizBg_${type}`);
+        if(saved) {
+            document.documentElement.style.setProperty(bgKeys[type], `url('${saved}')`);
+            const cap = type.charAt(0).toUpperCase()+type.slice(1);
+            bgData[type] = saved;
+            const preview = document.getElementById(`bg${cap}Preview`);
+            preview.src = saved; preview.style.display = 'block';
+            document.getElementById(`bg${cap}Clear`).style.display = 'inline-block';
+        }
+    });
+
+    document.getElementById('btnToggleBgPanel').addEventListener('click', function() {
+        const panel = document.getElementById('bgSettingsPanel');
+        panel.style.display = 'block';
+        this.style.display = 'none';
+    });
+</script>
+
 <script type="module">
     import { database } from "./firebase-config.js";
     import { ref, push, update, onValue, set, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
@@ -559,6 +685,9 @@
     function openScoreTable(quizId) {
         currentScoreTableQuizId = quizId;
         scoreSortMode = "name";
+        scoreShowRawAnswers = false;
+        const toggleBtn = document.getElementById('btnToggleAnswers');
+        if(toggleBtn) { toggleBtn.textContent = '👁 ดูคำตอบที่กรอก'; toggleBtn.classList.remove('show-raw'); }
         const quizData = globalQuizzes[quizId];
         if(!quizData) return;
         document.getElementById('scoreTableTitle').innerText = `📊 คะแนนนักเรียน — ${quizData.examName}`;
@@ -576,15 +705,41 @@
             btnName.style.background = '#EEF2F8'; btnName.style.color = '#374151'; btnName.textContent = 'เรียงตามชื่อ';
         }
     }
+    let scoreShowRawAnswers = false;
+
     function renderScoreTableBody(quizId) {
         const quizData = globalQuizzes[quizId];
         if(!quizData) return;
         const questions = quizData.questions
             ? Object.entries(quizData.questions).sort((a,b) => (a[1].questionNumber||0) - (b[1].questionNumber||0))
             : [];
-        let sessions = Object.values(globalScores).filter(s => s.quizId === quizId);
+
+        // FEATURE 1: Merge same-name players — keep last session per name
+        let rawSessions = Object.values(globalScores).filter(s => s.quizId === quizId);
+        const mergedMap = {};
+        rawSessions.forEach(s => {
+            const name = (s.playerName || '').trim();
+            if(!mergedMap[name]) {
+                mergedMap[name] = s;
+            } else {
+                // Merge: combine answers (latest per question), recalculate score
+                const existing = mergedMap[name];
+                const mergedAnswers = Object.assign({}, existing.answers || {}, s.answers || {});
+                const mergedRaw = Object.assign({}, existing.answers_raw || {}, s.answers_raw || {});
+                let newScore = 0;
+                Object.keys(mergedAnswers).forEach(qid => {
+                    if(mergedAnswers[qid] === true) {
+                        const qScore = quizData.questions?.[qid]?.score || 5;
+                        newScore += parseInt(qScore);
+                    }
+                });
+                mergedMap[name] = { ...existing, answers: mergedAnswers, answers_raw: mergedRaw, totalScore: newScore };
+            }
+        });
+        let sessions = Object.values(mergedMap);
         if(scoreSortMode === 'name') sessions.sort((a,b) => (a.playerName||'').localeCompare(b.playerName||'', 'th'));
         else sessions.sort((a,b) => (b.totalScore||0) - (a.totalScore||0));
+
         let thead = `<tr><th style="text-align:left;">ชื่อ</th><th class="td-total">คะแนนรวม</th>`;
         questions.forEach(([,q]) => { thead += `<th>ข้อ ${q.questionNumber}</th>`; });
         thead += `</tr>`;
@@ -596,13 +751,28 @@
                 tbody += `<tr><td class="name-cell">${s.playerName}</td><td class="td-total">${s.totalScore || 0}</td>`;
                 questions.forEach(([qid]) => {
                     const ans = s.answers ? s.answers[qid] : undefined;
-                    tbody += ans === true ? `<td class="td-correct">✓</td>` : `<td class="td-wrong">${ans === false ? '✗' : '—'}</td>`;
+                    const rawAns = s.answers_raw ? (s.answers_raw[qid] ?? '') : '';
+                    if(scoreShowRawAnswers) {
+                        // Show raw typed answer
+                        tbody += ans === true
+                            ? `<td class="td-correct" title="ถูก">${rawAns !== '' ? rawAns : '✓'}</td>`
+                            : `<td class="td-raw-answer">${rawAns !== '' ? rawAns : (ans === false ? '—' : '—')}</td>`;
+                    } else {
+                        // Show color status
+                        tbody += ans === true ? `<td class="td-correct">✓</td>` : `<td class="td-wrong">${ans === false ? '✗' : '—'}</td>`;
+                    }
                 });
                 tbody += `</tr>`;
             });
         }
         document.getElementById('scoreTable').innerHTML = `<thead>${thead}</thead><tbody>${tbody}</tbody>`;
     }
+    document.getElementById('btnToggleAnswers').addEventListener('click', function() {
+        scoreShowRawAnswers = !scoreShowRawAnswers;
+        this.textContent = scoreShowRawAnswers ? '🎨 ดูสีสถานะ' : '👁 ดูคำตอบที่กรอก';
+        this.classList.toggle('show-raw', scoreShowRawAnswers);
+        if(currentScoreTableQuizId) renderScoreTableBody(currentScoreTableQuizId);
+    });
     document.getElementById('btnSortName').addEventListener('click', () => {
         scoreSortMode = 'name'; updateSortButtons();
         if(currentScoreTableQuizId) renderScoreTableBody(currentScoreTableQuizId);
