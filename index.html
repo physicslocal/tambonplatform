@@ -736,22 +736,14 @@
         <style>
             body { font-family: 'Sarabun', sans-serif; margin: 0; padding: 0; }
 
-            /* FIX 1: ไม่ใช้ page-break-after บน .page ตรงๆ
-               ใช้ break-after: page บน .page แต่ยกเว้นข้อสุดท้าย
-               วิธีที่ดีที่สุดคือ ใส่ class .page-break แทน .page
-               และใช้ CSS :not(:last-child) */
             .page {
                 width: 210mm;
-                padding: 18mm 20mm;
+                padding: 14mm 20mm;
                 box-sizing: border-box;
-                display: flex;
-                flex-direction: column;
-            }
-            /* ทุกข้อต่อกันเลย ไม่ขึ้นหน้าใหม่ */
-            .page {
-                margin-bottom: 30px;
+                display: block;
+                margin-bottom: 24px;
                 border-bottom: 2px dashed #E2E8F0;
-                padding-bottom: 30px;
+                padding-bottom: 24px;
             }
 
             .exam-title-box {
@@ -763,7 +755,7 @@
             .q-header { font-weight: 700; font-size: 20px; margin-bottom: 12px; display:flex; justify-content: space-between; align-items: center; }
             .q-score-badge { background: #FEF3C7; border: 1px solid #F59E0B; padding: 4px 14px; border-radius: 20px; font-size: 15px; color: #92400E; font-weight: 700; }
             .q-img { width: 100%; max-height: 340px; object-fit: contain; display: block; margin: 14px 0; border-radius: 8px; border: 1px solid #E2E8F0; }
-            .q-text { font-size: 17px; line-height: 1.8; white-space: pre-wrap; background: #FAF9F5; padding: 16px; border-radius: 8px; border-left: 5px solid #F4A261; flex: 1; }
+            .q-text { font-size: 17px; line-height: 1.8; white-space: pre-wrap; background: #FAF9F5; padding: 16px; border-radius: 8px; border-left: 5px solid #F4A261; }
             .solution-section { margin-top: 20px; border-top: 2px dashed #86EFAC; padding-top: 16px; }
             .solution-label { font-size: 15px; font-weight: 700; color: #166534; margin-bottom: 8px; }
             .solution-answer { background: #DCFCE7; border: 1px solid #86EFAC; border-radius: 8px; padding: 10px 16px; font-size: 16px; font-weight: 700; color: #14532D; margin-bottom: 10px; }
