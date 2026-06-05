@@ -736,32 +736,51 @@
         <style>
             body { font-family: 'Sarabun', sans-serif; margin: 0; padding: 0; }
 
+            /* แต่ละข้อ = 1 หน้า A4 พอดี มีที่ว่างด้านล่างสำหรับทด */
             .page {
                 width: 210mm;
-                padding: 14mm 20mm;
+                min-height: 297mm;
+                padding: 12mm 20mm 10mm 20mm;
                 box-sizing: border-box;
-                display: block;
-                margin-bottom: 24px;
-                border-bottom: 2px dashed #E2E8F0;
-                padding-bottom: 24px;
+                display: flex;
+                flex-direction: column;
+                break-after: page;
+                page-break-after: always;
+            }
+            /* ข้อสุดท้ายไม่ต้องขึ้นหน้าใหม่ */
+            .page:last-child {
+                break-after: avoid;
+                page-break-after: avoid;
             }
 
+            /* หัวข้อชุดข้อสอบ — ชิดซ้าย เล็ก แสดงแค่ข้อแรก */
             .exam-title-box {
-                border: 3px solid #D62828; border-radius: 10px; padding: 14px 22px;
-                text-align: center; margin-bottom: 22px; background: #FFF9F9;
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                border: 2px solid #D62828;
+                border-radius: 8px;
+                padding: 7px 16px;
+                margin-bottom: 14px;
+                background: #FFF9F9;
             }
-            .exam-title-box h1 { margin:0; font-size: 26px; font-weight: 700; color: #D62828; }
-            .exam-title-box .sub { font-size: 14px; color: #666; margin-top: 4px; }
-            .q-header { font-weight: 700; font-size: 20px; margin-bottom: 12px; display:flex; justify-content: space-between; align-items: center; }
+            .exam-title-box .title-text { font-size: 15px; font-weight: 700; color: #D62828; }
+            .exam-title-box .title-count { font-size: 13px; color: #888; margin-left: 6px; }
+
+            .q-header { font-weight: 700; font-size: 20px; margin-bottom: 10px; display:flex; justify-content: space-between; align-items: center; }
             .q-score-badge { background: #FEF3C7; border: 1px solid #F59E0B; padding: 4px 14px; border-radius: 20px; font-size: 15px; color: #92400E; font-weight: 700; }
-            .q-img { width: 100%; max-height: 340px; object-fit: contain; display: block; margin: 14px 0; border-radius: 8px; border: 1px solid #E2E8F0; }
-            .q-text { font-size: 17px; line-height: 1.8; white-space: pre-wrap; background: #FAF9F5; padding: 16px; border-radius: 8px; border-left: 5px solid #F4A261; }
-            .solution-section { margin-top: 20px; border-top: 2px dashed #86EFAC; padding-top: 16px; }
+            .q-img { width: 100%; max-height: 300px; object-fit: contain; display: block; margin: 10px 0; border-radius: 8px; border: 1px solid #E2E8F0; }
+            .q-text { font-size: 17px; line-height: 1.8; white-space: pre-wrap; background: #FAF9F5; padding: 14px; border-radius: 8px; border-left: 5px solid #F4A261; }
+            /* พื้นที่ว่างสำหรับทดเลข — ยืดเต็มที่เหลือ */
+            .answer-space { flex: 1; border: 1.5px dashed #CBD5E1; border-radius: 8px; margin-top: 14px; min-height: 60mm; }
+
+            .solution-section { margin-top: 16px; border-top: 2px dashed #86EFAC; padding-top: 14px; }
             .solution-label { font-size: 15px; font-weight: 700; color: #166534; margin-bottom: 8px; }
             .solution-answer { background: #DCFCE7; border: 1px solid #86EFAC; border-radius: 8px; padding: 10px 16px; font-size: 16px; font-weight: 700; color: #14532D; margin-bottom: 10px; }
             .solution-text { font-size: 15px; line-height: 1.8; white-space: pre-wrap; background: #F0FDF4; padding: 14px; border-radius: 8px; }
             @media print {
-                .page { margin-bottom: 20px; }
+                .page { break-after: page; page-break-after: always; }
+                .page:last-child { break-after: avoid; page-break-after: avoid; }
             }
         </style></head><body>`;
     }
@@ -771,20 +790,22 @@
         if(qIds.length === 0) { alert('ไม่มีข้อสอบในชุดนี้'); return; }
         const quizName = globalQuizzes[currentQuizId]?.examName || "ข้อสอบ";
         let html = buildPdfHeader(quizName);
-        qIds.forEach(qid => {
+        qIds.forEach((qid, idx) => {
             const q = currentQuizQuestions[qid];
             const imgSrc = q.imageData || q.imageUrl || '';
+            // หัวข้อแสดงแค่ข้อแรก
+            const titleHtml = idx === 0
+                ? `<div class="exam-title-box"><span class="title-text">Quiz Tambon Platform : ${quizName}</span><span class="title-count">(${qIds.length} ข้อ)</span></div>`
+                : '';
             html += `<div class="page">
-                <div class="exam-title-box">
-                    <h1>📋 ${quizName}</h1>
-                    <div class="sub">ข้อสอบ • ${qIds.length} ข้อ</div>
-                </div>
+                ${titleHtml}
                 <div class="q-header">
                     <span>ข้อที่ ${q.questionNumber}</span>
                     <span class="q-score-badge">คะแนน: ${q.score || '-'}</span>
                 </div>
                 ${imgSrc ? `<img class="q-img" src="${imgSrc}" alt="รูปประกอบ">` : ''}
                 <div class="q-text">${(q.questionText||'').replace(/</g,'&lt;')}</div>
+                <div class="answer-space"></div>
             </div>`;
         });
         html += `</body></html>`;
@@ -798,16 +819,16 @@
         if(qIds.length === 0) { alert('ไม่มีข้อสอบในชุดนี้'); return; }
         const quizName = globalQuizzes[currentQuizId]?.examName || "ข้อสอบ";
         let html = buildPdfHeader(quizName);
-        qIds.forEach(qid => {
+        qIds.forEach((qid, idx) => {
             const q = currentQuizQuestions[qid];
             const imgSrc = q.imageData || q.imageUrl || '';
             const hasSol = q.solution && q.solution.trim() !== '';
             const hasAns = q.correctAnswer && q.correctAnswer.trim() !== '';
+            const titleHtml = idx === 0
+                ? `<div class="exam-title-box"><span class="title-text">Quiz Tambon Platform : ${quizName} — เฉลย</span><span class="title-count">(${qIds.length} ข้อ)</span></div>`
+                : '';
             html += `<div class="page">
-                <div class="exam-title-box">
-                    <h1>📋 ${quizName} — เฉลย</h1>
-                    <div class="sub">เฉลยละเอียด • ${qIds.length} ข้อ</div>
-                </div>
+                ${titleHtml}
                 <div class="q-header">
                     <span>ข้อที่ ${q.questionNumber}</span>
                     <span class="q-score-badge">คะแนน: ${q.score || '-'}</span>
