@@ -114,6 +114,15 @@
             background: #B0B8C4; color: #333; border: none; cursor: pointer;
         }
         .kb-tab.active { background: #D1D5DB; color: #000; }
+        .kb-tab-native { background: #3B82F6 !important; color: white !important; font-weight:700; }
+        .score-table-wrap { overflow-x:auto; margin-top:10px; }
+        .score-table { width:100%; border-collapse:collapse; font-size:14px; }
+        .score-table th { padding:9px 12px; background:#F8FAFC; border:1px solid #E2E8F0; white-space:nowrap; }
+        .score-table td { padding:8px 12px; border:1px solid #E2E8F0; text-align:center; }
+        .score-table td.name-cell { text-align:left; font-weight:500; white-space:nowrap; }
+        .td-correct { background:#DCFCE7; color:#166534; font-weight:700; }
+        .td-wrong { background:#F1F5F9; color:#94A3B8; }
+        .td-total { background:#FEF3C7; font-weight:700; }
 
         .kb-panel { display: none; }
         .kb-panel.active { display: block; }
@@ -186,6 +195,8 @@
         <button class="kb-tab" data-panel="inf">∞≠∈</button>
         <button class="kb-tab" data-panel="abc">abc</button>
         <button class="kb-tab" data-panel="abg">αβγ</button>
+        <button class="kb-tab" data-panel="thai">ก ข ค ง</button>
+        <button class="kb-tab kb-tab-native" id="kb-tab-native-btn">⌨️ แป้นตัวเอง</button>
     </div>
 
     <!-- Panel 123 -->
@@ -356,6 +367,42 @@
             <button class="kb-key blue wide-2" id="kb-enter-abg">↵</button>
         </div>
     </div>
+
+    <!-- Panel ก ข ค ง -->
+    <div class="kb-panel" id="kb-panel-thai">
+        <div class="kb-row" style="justify-content:center; gap:10px;">
+            <button class="kb-key" data-val="ก" style="flex:2; font-size:30px; height:64px;">ก</button>
+            <button class="kb-key" data-val="ข" style="flex:2; font-size:30px; height:64px;">ข</button>
+            <button class="kb-key" data-val="ค" style="flex:2; font-size:30px; height:64px;">ค</button>
+            <button class="kb-key" data-val="ง" style="flex:2; font-size:30px; height:64px;">ง</button>
+        </div>
+        <div class="kb-row" style="justify-content:center; gap:10px;">
+            <button class="kb-key" data-val="จ" style="flex:2; font-size:24px; height:50px;">จ</button>
+            <button class="kb-key" data-val="1" style="flex:2; font-size:24px; height:50px;">1</button>
+            <button class="kb-key" data-val="2" style="flex:2; font-size:24px; height:50px;">2</button>
+            <button class="kb-key" data-val="3" style="flex:2; font-size:24px; height:50px;">3</button>
+            <button class="kb-key" data-val="4" style="flex:2; font-size:24px; height:50px;">4</button>
+            <button class="kb-key dark" id="kb-backspace-thai" style="flex:2; height:50px;">⌫</button>
+        </div>
+        <div class="kb-row">
+            <button class="kb-key dark wide-3" id="kb-close-thai">ปิดแป้น</button>
+            <button class="kb-key wide-3" data-val=" "> </button>
+            <button class="kb-key blue wide-3" id="kb-enter-thai">↵</button>
+        </div>
+    </div>
+</div>
+
+<!-- SCORE TABLE MODAL -->
+<div id="scoreTableModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:3000; align-items:flex-start; justify-content:center; padding-top:30px; overflow-y:auto;">
+    <div style="background:white; border-radius:16px; padding:25px; width:95vw; max-width:960px; max-height:85vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;">
+            <h3 id="scoreTableTitle" style="margin:0; color:var(--primary-red);">📊 คะแนนนักเรียน</h3>
+            <button id="btnCloseScoreTable" style="background:#EF4444;color:white;border:none;border-radius:8px;padding:7px 16px;cursor:pointer;font-size:15px;font-family:'Sarabun',sans-serif;">✕ ปิด</button>
+        </div>
+        <div class="score-table-wrap">
+            <table class="score-table" id="scoreTable"></table>
+        </div>
+    </div>
 </div>
 
 <!-- ===== VIEWS ===== -->
@@ -419,7 +466,7 @@
             <p id="pQuestionText" style="font-size: 18px; line-height: 1.6; background: #FAF9F5; padding: 15px; border-radius: 8px; border-left: 4px solid var(--primary-yellow);"></p>
             <div class="form-group" style="margin-top: 20px;">
                 <label>พิมพ์คำตอบของคุณที่นี่:</label>
-                <input type="text" id="playerAnswerInput" placeholder="กรอกคำตอบ..." class="kb-target" readonly>
+                <input type="text" id="playerAnswerInput" placeholder="กรอกคำตอบ..." class="kb-target">
             </div>
             <button class="btn-primary" id="btnSubmitAnswer" style="background-color: var(--primary-yellow); color: black; font-weight: bold;">ส่งคำตอบข้อนี้</button>
         </div>
@@ -661,9 +708,19 @@
         this.style.color = capsOn ? '#fff' : '';
     });
 
-    // ========================
-    // AUTH
-    // ========================
+    // Thai keyboard handlers
+    document.getElementById('kb-backspace-thai').addEventListener('click', backspaceTarget);
+    document.getElementById('kb-enter-thai').addEventListener('click', closeKeyboard);
+    document.getElementById('kb-close-thai').addEventListener('click', closeKeyboard);
+
+    // Native keyboard button — ปิด overlay แล้วให้พิมพ์จากอุปกรณ์เองได้
+    document.getElementById('kb-tab-native-btn').addEventListener('click', () => {
+        const target = kbTargetEl;
+        closeKeyboard();
+        if(target) {
+            setTimeout(() => { target.removeAttribute('readonly'); target.focus(); }, 50);
+        }
+    });
     document.getElementById('btnPlayerLogin').addEventListener('click', () => {
         const name = document.getElementById('playerNameInput').value.trim();
         if(!name) { alert('กรุณาระบุชื่อก่อนเข้าเรียนครับ'); return; }
@@ -745,7 +802,7 @@
                 <div style="margin-top:10px;">
                     <button class="btn-secondary ad-save" data-id="${id}" style="width:100%; padding:8px; margin-bottom:5px;">💾 บันทึกหัวข้อ</button>
                     <button class="btn-primary ad-manage" data-id="${id}" style="width:100%; padding:8px;">Enter จัดการโจทย์ ➔</button>
-                    <div class="score-box"><strong>📊 ผลสอบล่าสุด:</strong><ul>${statHtml}</ul></div>
+                    <div class="score-box"><button class="btn-view-scores" data-id="${id}" style="width:100%;padding:9px;background:var(--primary-red);color:white;border-radius:6px;font-size:13px;border:none;cursor:pointer;font-family:'Sarabun',sans-serif;font-weight:600;">📊 ดูคะแนนนักเรียน</button></div>
                 </div>
             `;
             container.appendChild(card);
@@ -774,11 +831,59 @@
         container.querySelectorAll('.ad-manage').forEach(b => {
             b.addEventListener('click', (e) => { openAdminQuizManage(e.target.getAttribute('data-id')); });
         });
+
+        container.querySelectorAll('.btn-view-scores').forEach(b => {
+            b.addEventListener('click', (e) => {
+                e.stopPropagation();
+                openScoreTable(b.getAttribute('data-id'));
+            });
+        });
     }
 
-    // ========================
-    // ADMIN MANAGE QUIZ
-    // ========================
+    function openScoreTable(quizId) {
+        const quizData = globalQuizzes[quizId];
+        if(!quizData) return;
+        document.getElementById('scoreTableTitle').innerText = `📊 คะแนนนักเรียน — ${quizData.examName}`;
+
+        const questions = quizData.questions
+            ? Object.entries(quizData.questions).sort((a,b) => (a[1].questionNumber||0) - (b[1].questionNumber||0))
+            : [];
+
+        const sessions = Object.values(globalScores).filter(s => s.quizId === quizId);
+
+        let thead = `<tr>
+            <th style="text-align:left;">ชื่อ</th>
+            <th class="td-total">คะแนนรวม</th>`;
+        questions.forEach(([,q]) => { thead += `<th>ข้อ ${q.questionNumber}</th>`; });
+        thead += `</tr>`;
+
+        let tbody = '';
+        if(sessions.length === 0) {
+            tbody = `<tr><td colspan="${2+questions.length}" style="text-align:center;padding:20px;color:#999;">ยังไม่มีนักเรียนทำข้อสอบนี้</td></tr>`;
+        } else {
+            sessions.forEach(s => {
+                tbody += `<tr><td class="name-cell">${s.playerName}</td>
+                    <td class="td-total">${s.totalScore || 0}</td>`;
+                questions.forEach(([qid]) => {
+                    const ans = s.answers ? s.answers[qid] : undefined;
+                    if(ans === true) {
+                        tbody += `<td class="td-correct">✓</td>`;
+                    } else {
+                        tbody += `<td class="td-wrong">${ans === false ? '✗' : '—'}</td>`;
+                    }
+                });
+                tbody += `</tr>`;
+            });
+        }
+
+        document.getElementById('scoreTable').innerHTML = `<thead>${thead}</thead><tbody>${tbody}</tbody>`;
+        const modal = document.getElementById('scoreTableModal');
+        modal.style.display = 'flex';
+    }
+
+    document.getElementById('btnCloseScoreTable').addEventListener('click', () => {
+        document.getElementById('scoreTableModal').style.display = 'none';
+    });
     let currentQuizListener = null;
 
     function openAdminQuizManage(quizId) {
@@ -863,7 +968,12 @@
 
     document.getElementById('btnAdminAddNewQ').addEventListener('click', () => {
         const qIds = Object.keys(currentQuizQuestions);
-        setupNewAdminQForm(qIds.length + 1);
+        let maxNum = 0;
+        qIds.forEach(qid => {
+            const n = parseInt(currentQuizQuestions[qid].questionNumber || 0);
+            if(n > maxNum) maxNum = n;
+        });
+        setupNewAdminQForm(maxNum + 1);
     });
 
     document.getElementById('btnAdminSaveQ').addEventListener('click', () => {
