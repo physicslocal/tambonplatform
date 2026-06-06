@@ -1352,32 +1352,53 @@
         return false;
     }
     function latexToJS(s) {
-        return s.trim()
-            .replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '($1)/($2)')
-            .replace(/\\sqrt\[3\]\{([^}]+)\}/g, 'Math.cbrt($1)')
-            .replace(/\\sqrt\{([^}]+)\}/g, 'Math.sqrt($1)')
-            .replace(/\^\{([^}]+)\}/g, '**($1)')
-            .replace(/\^([0-9.]+)/g, '**$1')
-            .replace(/\\pi/g, 'Math.PI')
-            .replace(/\\infty/g, 'Infinity')
-            .replace(/\\times/g, '*')
-            .replace(/\\cdot/g, '*')
-            .replace(/×/g, '*')
-            .replace(/÷/g, '/')
-            .replace(/\\left|\\right/g, '')
-            .replace(/\\[a-zA-Z]+/g, '')
-            .replace(/([0-9])([A-Za-z])/g, '$1*$2')
-            .replace(/([A-Za-z])([0-9])/g, '$1*$2')
-            .replace(/([A-Za-z])\(/g, '$1*(')
-            .replace(/\)([A-Za-z0-9])/g, ')*$1');
-    }
-    const MATH_BUILTINS = new Set(['Math','PI','sqrt','cbrt','pow','abs','sin','cos','tan','log','exp','E','Infinity','floor','ceil','round','max','min']);
-    function extractVars(jsExpr) {
-        const matches = [...jsExpr.matchAll(/\b([a-zA-Z_][a-zA-Z0-9_]*)\b/g)];
-        const vars = new Set();
-        matches.forEach(m => { if (!MATH_BUILTINS.has(m[1])) vars.add(m[1]); });
-        return [...vars];
-    }
+    // 1. ป้องกันตัวแปรกรีกไม่ให้ถูกลบ และจัดการค่าทางคณิตศาสตร์พื้นฐาน
+    s = s.trim()
+         .replace(/\\alpha/g, 'alpha')
+         .replace(/\\beta/g, 'beta')
+         .replace(/\\theta/g, 'theta')
+         .replace(/\\pi/g, 'Math.PI')
+         .replace(/\\infty/g, 'Infinity');
+
+    let js = s
+        .replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '($1)/($2)')
+        // ใช้ @ นำหน้าชั่วคราว เพื่อป้องกันไม่ให้ถูกแยกตัวอักษรหรือถูกแทรกเครื่องหมายคูณ
+        .replace(/\\sqrt\[3\]\{([^}]+)\}/g, '@CBRT@($1)') 
+        .replace(/\\sqrt\{([^}]+)\}/g, '@SQRT@($1)')     
+        .replace(/\^\{([^}]+)\}/g, '**($1)')
+        .replace(/\^([0-9.]+)/g, '**$1')
+        // ดึงตัวเลข/อักษรออกจาก Subscript ของ LaTeX เพื่อให้อ่านเป็นชื่อตัวแปรที่ถูกต้อง (เช่น V_{0} -> V_0)
+        .replace(/_\{([^}]+)\}/g, '_$1')
+        .replace(/\\times/g, '*')
+        .replace(/\\cdot/g, '*')
+        .replace(/×/g, '*')
+        .replace(/÷/g, '/')
+        .replace(/\\left|\\right/g, '')
+        .replace(/\\[a-zA-Z]+/g, ''); // ลบคำสั่ง LaTeX อื่นๆ ที่ไม่รองรับ
+
+    // 2. แยกตัวอักษรที่ติดกันให้เป็นการคูณ (เช่น ab -> a*b, mg -> m*g)
+    js = js.replace(/[a-zA-Z]+/g, function(match) {
+        // คำสงวนที่จะไม่ถูกแยกตัวอักษร
+        const builtins = new Set(['Math', 'PI', 'Infinity', 'alpha', 'beta', 'theta', 'SQRT', 'CBRT']);
+        if (builtins.has(match)) return match;
+        return match.split('').join('*');
+    });
+
+    // 3. เติมเครื่องหมายคูณ (*) ระหว่างตัวเลข ตัวอักษร และวงเล็บ
+    js = js.replace(/([0-9])([a-zA-Z\(])/g, '$1*$2')
+           .replace(/([a-zA-Z\)])([0-9])/g, '$1*$2')
+           .replace(/\)\(/g, ')*(')
+           // ใส่คูณหน้าวงเล็บ แต่หลีกเลี่ยงกรณีที่มี @ อยู่ข้างหน้า (เช่น @SQRT@)
+           .replace(/([a-zA-Z_])\(/g, '$1*(')
+           .replace(/\)([a-zA-Z_])/g, ')*$1');
+
+    // 4. แปลงคำสั่งรูทที่ถูกซ่อนไว้กลับมาเป็นฟังก์ชัน Math ของ Javascript
+    js = js.replace(/@SQRT@/g, 'Math.sqrt')
+           .replace(/@CBRT@/g, 'Math.cbrt');
+
+    return js;
+}
+
     function parseExpr(s) {
         try {
             let e = latexToJS(s);
