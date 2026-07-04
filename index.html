@@ -80,9 +80,9 @@
         @media (max-width: 750px) { .quiz-grid { grid-template-columns: repeat(2, 1fr); } }
         @media (max-width: 480px) { .quiz-grid { grid-template-columns: 1fr; } }
 
-        #adminQuizGrid { grid-template-columns: repeat(3, 1fr); width: 100%; box-sizing: border-box; }
-        @media (max-width: 750px) { #adminQuizGrid { grid-template-columns: repeat(2, 1fr); } }
-        @media (max-width: 480px) { #adminQuizGrid { grid-template-columns: 1fr; } }
+        #adminQuizGridVisible, #adminQuizGridHidden { grid-template-columns: repeat(3, 1fr); width: 100%; box-sizing: border-box; }
+        @media (max-width: 750px) { #adminQuizGridVisible, #adminQuizGridHidden { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 480px) { #adminQuizGridVisible, #adminQuizGridHidden { grid-template-columns: 1fr; } }
 
         .quiz-card { background: white; border: 1px solid var(--border-color); border-top: 5px solid var(--primary); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; justify-content: space-between; position: relative; }
         .btn-delete-quiz { position: absolute; top: -10px; right: -10px; width: 28px; height: 28px; border-radius: 50%; background: #EF4444; color: white; font-size: 14px; font-weight: bold; border: 2px solid white; padding: 0; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.2); z-index: 10; }
@@ -450,8 +450,10 @@
             <button class="btn-primary" id="btnCreate">สร้างชุดข้อสอบสำเร็จ</button>
         </div>
     </div>
-    <h3 style="margin-top: 35px;">📦 รายการชุดข้อสอบในคลัง</h3>
-    <div id="adminQuizGrid" class="quiz-grid"></div>
+    <h3 style="margin-top: 35px;">👁 รายการชุดข้อสอบที่เผยแพร่อยู่</h3>
+    <div id="adminQuizGridVisible" class="quiz-grid"></div>
+    <h3 style="margin-top: 35px;">🙈 รายการชุดข้อสอบที่ซ่อนอยู่</h3>
+    <div id="adminQuizGridHidden" class="quiz-grid"></div>
 </div>
 
 <div id="view-admin-manage-quiz" class="view">
@@ -463,6 +465,22 @@
                 <button class="btn-pdf" id="btnExportPDF">📄 พิมพ์โจทย์ (1 ข้อ/หน้า)</button>
                 <button class="btn-pdf-ans" id="btnExportPDFAns">📋 พิมพ์โจทย์+เฉลย</button>
             </div>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; background:#FFFBF0; border:1px dashed var(--accent); border-radius:8px; padding:12px 14px; margin-top:15px;">
+            <label style="margin:0; font-size:13px; font-weight:600; white-space:nowrap;">คะแนนตั้งต้นข้อละ:</label>
+            <input type="number" min="0" id="manageBaseScoreInput" style="width:90px; padding:6px 10px;" value="5">
+            <button class="btn-secondary" id="btnApplyBaseScore" style="padding:8px 16px; font-size:13px; white-space:nowrap;">✅ ใช้คะแนนนี้กับทุกข้อในชุด</button>
+            <small style="color:#94A3B8; font-size:12px; flex-basis:100%;">* กดปุ่มนี้เมื่อต้องการตั้งคะแนนทุกข้อในชุดให้เท่ากันเท่านั้น (จะไปทับคะแนนที่เคยตั้งแยกไว้รายข้อ) ค่านี้ยังใช้เป็นคะแนนเริ่มต้นเวลาเพิ่มข้อใหม่ด้วย</small>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; background:#F0F9FF; border:1px dashed #7DD3FC; border-radius:8px; padding:12px 14px; margin-top:12px;">
+            <label style="margin:0; font-size:13px; font-weight:600; white-space:nowrap;">ตั้งคะแนนจากข้อที่</label>
+            <input type="number" min="1" id="rangeScoreFrom" style="width:70px; padding:6px 10px;" placeholder="เช่น 1">
+            <label style="margin:0; font-size:13px; font-weight:600; white-space:nowrap;">ถึงข้อที่</label>
+            <input type="number" min="1" id="rangeScoreTo" style="width:70px; padding:6px 10px;" placeholder="เช่น 5">
+            <label style="margin:0; font-size:13px; font-weight:600; white-space:nowrap;">ให้ข้อละ</label>
+            <input type="number" min="0" id="rangeScoreValue" style="width:70px; padding:6px 10px;" placeholder="คะแนน">
+            <button class="btn-secondary" id="btnApplyRangeScore" style="padding:8px 16px; font-size:13px; white-space:nowrap;">✅ ยืนยัน</button>
+            <small style="color:#94A3B8; font-size:12px; flex-basis:100%;">* ตั้งคะแนนเฉพาะข้อที่ ... ถึงข้อที่ ... ให้เป็นค่าที่กำหนด โดยไม่กระทบข้อนอกช่วง</small>
         </div>
     </div>
     <div class="manage-layout">
@@ -1266,59 +1284,70 @@
         });
     });
 
+    function buildAdminQuizCard(id, data) {
+        const safeName = String(data.examName || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+        const card = document.createElement('div');
+        card.className = 'quiz-card';
+        card.innerHTML = `
+            <button class="btn-delete-quiz" data-id="${id}" title="ลบชุดข้อสอบนี้">×</button>
+            <div style="display:grid; gap:8px;">
+                <div>
+                    <label style="margin-bottom:4px; font-size:12px;">ชื่อชุดข้อสอบ</label>
+                    <input type="text" id="adName-${id}" value="${safeName}">
+                </div>
+                <div>
+                    <label style="margin-bottom:4px; font-size:12px;">ชื่อวิชา</label>
+                    <select id="adSub-${id}">
+                        ${subjects.map(s => `<option value="${s}" ${data.subject===s?'selected':''}>${s}</option>`).join('')}
+                    </select>
+                </div>
+                <div>
+                    <label style="margin-bottom:4px; font-size:12px;">ส่งคำตอบได้กี่ครั้ง</label>
+                    <select id="adSubmitMode-${id}" class="submit-mode-select">
+                        <option value="unlimited" ${(data.submitMode || 'unlimited')==='unlimited'?'selected':''}>ส่งได้เรื่อย ๆ</option>
+                        <option value="once" ${data.submitMode==='once'?'selected':''}>ส่งครั้งเดียวเท่านั้น</option>
+                    </select>
+                </div>
+                <div class="visibility-toggle-row">
+                    <label style="margin:0; font-size:12px;">เปิดให้นักเรียนเห็นชุดนี้:</label>
+                    <label class="switch">
+                        <input type="checkbox" id="adVisible-${id}" ${isQuizVisibleToStudents(data) ? 'checked' : ''}>
+                        <span class="slider-toggle"></span>
+                    </label>
+                    <span class="visibility-label-text" id="adVisibleLabelText-${id}">${isQuizVisibleToStudents(data) ? '👁 มองเห็นอยู่' : '🙈 ซ่อนอยู่'}</span>
+                </div>
+            </div>
+            <div style="margin-top:10px; display:grid; gap:6px;">
+                <button class="btn-secondary ad-save" data-id="${id}" style="width:100%; padding:8px;">💾 บันทึกข้อมูลชุดนี้</button>
+                <button class="btn-primary ad-manage" data-id="${id}" style="width:100%; padding:8px;">Enter จัดการโจทย์ ➔</button>
+                <div class="score-box"><button class="btn-view-scores" data-id="${id}" style="width:100%;padding:9px;background:var(--primary-dark);color:white;border-radius:6px;font-size:13px;border:none;cursor:pointer;font-family:'Sarabun',sans-serif;font-weight:600;">📊 ดูคะแนนนักเรียน</button></div>
+            </div>
+        `;
+        return card;
+    }
+
     function renderAdminDashboard() {
-        const container = document.getElementById('adminQuizGrid');
-        container.innerHTML = '';
+        const visibleContainer = document.getElementById('adminQuizGridVisible');
+        const hiddenContainer = document.getElementById('adminQuizGridHidden');
+        visibleContainer.innerHTML = '';
+        hiddenContainer.innerHTML = '';
         const ids = Object.keys(globalQuizzes);
         if (ids.length === 0) {
-            container.innerHTML = '<p style="grid-column:span 4; text-align:center; color:#888;">คลังยังว่างเปล่า</p>'; return;
+            visibleContainer.innerHTML = '<p style="grid-column:span 4; text-align:center; color:#888;">คลังยังว่างเปล่า</p>';
+            hiddenContainer.innerHTML = '<p style="grid-column:span 4; text-align:center; color:#888;">คลังยังว่างเปล่า</p>';
+            return;
         }
+        let visibleCount = 0, hiddenCount = 0;
         ids.forEach(id => {
             const data = globalQuizzes[id] || {};
-            const safeName = String(data.examName || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;');
-            const card = document.createElement('div');
-            card.className = 'quiz-card';
-            card.innerHTML = `
-                <button class="btn-delete-quiz" data-id="${id}" title="ลบชุดข้อสอบนี้">×</button>
-                <div style="display:grid; gap:8px;">
-                    <div>
-                        <label style="margin-bottom:4px; font-size:12px;">ชื่อชุดข้อสอบ</label>
-                        <input type="text" id="adName-${id}" value="${safeName}">
-                    </div>
-                    <div>
-                        <label style="margin-bottom:4px; font-size:12px;">ชื่อวิชา</label>
-                        <select id="adSub-${id}">
-                            ${subjects.map(s => `<option value="${s}" ${data.subject===s?'selected':''}>${s}</option>`).join('')}
-                        </select>
-                    </div>
-                    <div>
-                        <label style="margin-bottom:4px; font-size:12px;">ส่งคำตอบได้กี่ครั้ง</label>
-                        <select id="adSubmitMode-${id}" class="submit-mode-select">
-                            <option value="unlimited" ${(data.submitMode || 'unlimited')==='unlimited'?'selected':''}>ส่งได้เรื่อย ๆ</option>
-                            <option value="once" ${data.submitMode==='once'?'selected':''}>ส่งครั้งเดียวเท่านั้น</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label style="margin-bottom:4px; font-size:12px;">คะแนนตั้งต้นข้อละ</label>
-                        <input type="number" min="0" id="adBase-${id}" value="${data.baseScorePerQuestion ?? 5}">
-                    </div>
-                    <div class="visibility-toggle-row">
-                        <label style="margin:0; font-size:12px;">เปิดให้นักเรียนเห็นชุดนี้:</label>
-                        <label class="switch">
-                            <input type="checkbox" id="adVisible-${id}" ${isQuizVisibleToStudents(data) ? 'checked' : ''}>
-                            <span class="slider-toggle"></span>
-                        </label>
-                        <span class="visibility-label-text" id="adVisibleLabelText-${id}">${isQuizVisibleToStudents(data) ? '👁 มองเห็นอยู่' : '🙈 ซ่อนอยู่'}</span>
-                    </div>
-                </div>
-                <div style="margin-top:10px; display:grid; gap:6px;">
-                    <button class="btn-secondary ad-save" data-id="${id}" style="width:100%; padding:8px;">💾 บันทึกข้อมูลชุดนี้</button>
-                    <button class="btn-primary ad-manage" data-id="${id}" style="width:100%; padding:8px;">Enter จัดการโจทย์ ➔</button>
-                    <div class="score-box"><button class="btn-view-scores" data-id="${id}" style="width:100%;padding:9px;background:var(--primary-dark);color:white;border-radius:6px;font-size:13px;border:none;cursor:pointer;font-family:'Sarabun',sans-serif;font-weight:600;">📊 ดูคะแนนนักเรียน</button></div>
-                </div>
-            `;
-            container.appendChild(card);
+            const card = buildAdminQuizCard(id, data);
+            if (isQuizVisibleToStudents(data)) { visibleContainer.appendChild(card); visibleCount++; }
+            else { hiddenContainer.appendChild(card); hiddenCount++; }
         });
+        if (visibleCount === 0) visibleContainer.innerHTML = '<p style="grid-column:span 4; text-align:center; color:#888;">ยังไม่มีชุดข้อสอบที่เผยแพร่อยู่</p>';
+        if (hiddenCount === 0) hiddenContainer.innerHTML = '<p style="grid-column:span 4; text-align:center; color:#888;">ยังไม่มีชุดข้อสอบที่ซ่อนอยู่</p>';
+
+        const container = document.getElementById('view-admin-dashboard');
         container.querySelectorAll('.btn-delete-quiz').forEach(b => {
             b.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -1331,20 +1360,14 @@
         container.querySelectorAll('.ad-save').forEach(b => {
             b.addEventListener('click', (e) => {
                 const id = e.currentTarget.getAttribute('data-id');
-                const newBaseScore = document.getElementById(`adBase-${id}`).value.trim() || '5';
                 const visible = document.getElementById(`adVisible-${id}`).checked;
                 const updateObj = {
                     examName: document.getElementById(`adName-${id}`).value.trim(),
                     subject: document.getElementById(`adSub-${id}`).value,
                     submitMode: document.getElementById(`adSubmitMode-${id}`).value,
-                    baseScorePerQuestion: newBaseScore,
                     visibleToStudents: visible
                 };
-                const quizQuestions = globalQuizzes[id]?.questions || {};
-                Object.keys(quizQuestions).forEach(qid => {
-                    updateObj[`questions/${qid}/score`] = newBaseScore;
-                });
-                update(ref(database, `quizzes/${id}`), updateObj).then(() => alert('แก้ข้อมูลชุดข้อสอบและคะแนนทุกข้อสำเร็จ!'));
+                update(ref(database, `quizzes/${id}`), updateObj).then(() => alert('แก้ข้อมูลชุดข้อสอบสำเร็จ!'));
             });
         });
         container.querySelectorAll('.ad-manage').forEach(b => {
@@ -1678,6 +1701,8 @@
         currentQuizId = quizId;
         currentActiveQuestionId = "";
         document.getElementById('adminEditingTitle').innerText = `จัดการชุด: ${globalQuizzes[quizId].examName}`;
+        const baseVal = globalQuizzes[quizId]?.baseScorePerQuestion;
+        document.getElementById('manageBaseScoreInput').value = (!baseVal || baseVal === "-") ? "5" : baseVal;
         if (currentQuizListener) currentQuizListener();
         currentQuizListener = onValue(ref(database, `quizzes/${quizId}/questions`), (snap) => {
             currentQuizQuestions = snap.val() || {};
@@ -1685,6 +1710,49 @@
         });
         switchView('view-admin-manage-quiz');
     }
+
+    document.getElementById('btnApplyBaseScore').addEventListener('click', () => {
+        if (!currentQuizId) return;
+        const newBaseScore = document.getElementById('manageBaseScoreInput').value.trim() || '5';
+        const quizQuestions = globalQuizzes[currentQuizId]?.questions || {};
+        const qCount = Object.keys(quizQuestions).length;
+        const doApply = () => {
+            const updateObj = { baseScorePerQuestion: newBaseScore };
+            Object.keys(quizQuestions).forEach(qid => {
+                updateObj[`questions/${qid}/score`] = newBaseScore;
+            });
+            update(ref(database, `quizzes/${currentQuizId}`), updateObj).then(() => {
+                alert('ตั้งคะแนนตั้งต้นและปรับคะแนนทุกข้อในชุดสำเร็จ!');
+            });
+        };
+        if (qCount > 0) {
+            showConfirm(`ตั้งค่านี้จะทับคะแนนที่เคยตั้งแยกไว้รายข้อทั้ง ${qCount} ข้อ ให้เป็น ${newBaseScore} คะแนนเท่ากันหมด ใช่ไหม?`, doApply);
+        } else {
+            doApply();
+        }
+    });
+
+    document.getElementById('btnApplyRangeScore').addEventListener('click', () => {
+        if (!currentQuizId) return;
+        const fromNum = parseInt(document.getElementById('rangeScoreFrom').value, 10);
+        const toNum = parseInt(document.getElementById('rangeScoreTo').value, 10);
+        const scoreVal = document.getElementById('rangeScoreValue').value.trim();
+        if (isNaN(fromNum) || isNaN(toNum)) { alert('กรุณากรอกข้อเริ่มต้นและข้อสิ้นสุดให้ครบ'); return; }
+        if (fromNum > toNum) { alert('ข้อเริ่มต้นต้องน้อยกว่าหรือเท่ากับข้อสิ้นสุด'); return; }
+        if (scoreVal === '' || isNaN(parseFloat(scoreVal))) { alert('กรุณากรอกคะแนนที่ต้องการ'); return; }
+        const qIds = Object.keys(currentQuizQuestions).filter(qid => {
+            const num = currentQuizQuestions[qid].questionNumber;
+            return num >= fromNum && num <= toNum;
+        });
+        if (qIds.length === 0) { alert(`ไม่พบข้อที่ ${fromNum} ถึงข้อที่ ${toNum} ในชุดนี้`); return; }
+        showConfirm(`ตั้งคะแนนข้อที่ ${fromNum} ถึงข้อที่ ${toNum} (รวม ${qIds.length} ข้อ) ให้เป็นข้อละ ${scoreVal} คะแนน ใช่ไหม?`, () => {
+            const updateObj = {};
+            qIds.forEach(qid => { updateObj[`questions/${qid}/score`] = scoreVal; });
+            update(ref(database, `quizzes/${currentQuizId}`), updateObj).then(() => {
+                alert(`ตั้งคะแนนข้อที่ ${fromNum} ถึงข้อที่ ${toNum} สำเร็จ!`);
+            });
+        });
+    });
 
     function renderAdminQuestionNodes() {
         const container = document.getElementById('adminQuestionNodes');
@@ -1788,7 +1856,7 @@
         renderAdminChoiceList([]);
         document.getElementById('adminQSolution').value = "";
         setAdminImagePreview('');
-        const base = globalQuizzes[currentQuizId]?.baseScorePerQuestion;
+        const base = document.getElementById('manageBaseScoreInput')?.value;
         document.getElementById('adminQScore').value = (!base || base === "-") ? "5" : base;
     }
 
