@@ -159,6 +159,19 @@
         .btn-pdf-ans:hover { background: #6D28D9; }
         .solution-box { background: #F0FDF4; border: 2px solid #86EFAC; border-radius: 12px; padding: 20px; margin-top: 20px; }
         .solution-box-title { font-weight: 700; color: #166534; font-size: 15px; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+
+        .review-item { background: white; border: 1px solid var(--border-color); border-radius: 12px; padding: 22px; margin-bottom: 20px; }
+        .review-status-badge { font-weight: 700; padding: 6px 14px; border-radius: 20px; font-size: 13px; white-space: nowrap; }
+        .review-status-badge.correct { background: #DCFCE7; color: #166534; }
+        .review-status-badge.wrong { background: #FEE2E2; color: #991B1B; }
+        .review-status-badge.unattempted { background: #F1F5F9; color: #64748B; }
+        .review-status-badge.ungraded { background: #FEF9C3; color: #854D0E; }
+        .review-answer-box { border-radius: 8px; padding: 12px 14px; margin-top: 10px; font-size: 15px; }
+        .review-answer-box.your-answer { background: #FAF9F5; border: 1px solid var(--border-color); }
+        .review-answer-box.your-answer.wrong { background: #FEF2F2; border-color: #FCA5A5; }
+        .review-answer-box.your-answer.correct { background: #F0FDF4; border-color: #86EFAC; }
+        .review-answer-box.correct-answer { background: #EFF6FF; border: 1px solid #BFDBFE; }
+        .review-answer-label { font-weight: 600; font-size: 13px; margin-bottom: 4px; display: block; color: #475569; }
         .answer-manager-head { display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:10px; flex-wrap:wrap; }
         .answer-manager-head label { margin:0; }
         .correct-answer-list { display:grid; gap:10px; }
@@ -226,6 +239,14 @@
         .btn-remove-choice { background:#EF4444; color:#fff; border:none; border-radius:50%; width:26px; height:26px; cursor:pointer; flex-shrink:0; font-weight:bold; padding:0; }
         .btn-remove-choice:hover { background:#DC2626; }
         .btn-add-choice { background:var(--accent); color:var(--text-dark); font-size:13px; padding:8px 16px; }
+        .choice-input-wrap { flex:1; min-width:0; }
+        .choice-input-wrap .choice-text-input { width:100%; }
+        math-field.choice-text-input { min-height:44px; font-size:16px; padding:8px 10px; }
+        .btn-choice-latex { background:#EEF2FF; color:#4338CA; border:1px solid #C7D2FE; border-radius:7px; width:32px; height:32px; padding:0; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:700; cursor:pointer; flex-shrink:0; }
+        .btn-choice-latex:hover { background:#E0E7FF; }
+        .btn-choice-latex.active { background:#4338CA; color:#fff; border-color:#4338CA; }
+        .choice-kb { display:none; }
+        .choice-kb.visible { display:flex; }
 
         /* Choice (multiple-choice) answering UI - Player side */
         .player-choice-list { display:flex; flex-direction:column; gap:12px; margin:10px 0; }
@@ -404,6 +425,20 @@
             <button class="btn-primary" id="btnSubmitAnswer" style="background-color: var(--primary-light); color: black; font-weight: bold;">ส่งคำตอบข้อนี้</button>
         </div>
     </div>
+</div>
+
+<div id="view-player-review" class="view">
+    <div style="border-bottom: 2px solid var(--border-color); padding-bottom: 15px; margin-bottom: 20px; display:flex; justify-content: space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+        <div>
+            <h2 id="reviewQuizTitle">ผลคะแนน/เฉลย: ...</h2>
+            <small>ผู้สอบ: <span id="displayPlayerNameReview"></span></small>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:flex-end;">
+            <div id="reviewScoreBadge" class="score-box" style="margin:0; background:#FFF3CD; border-color:#FFC300; font-weight:700; min-width:160px; text-align:center;">คะแนนรวม: 0 คะแนน</div>
+            <button class="btn-secondary" onclick="switchView('view-player-dashboard')">⚙️ กลับหน้ารวมวิชา</button>
+        </div>
+    </div>
+    <div id="reviewQuestionList"></div>
 </div>
 
 <div id="view-admin-dashboard" class="view">
@@ -592,14 +627,31 @@
                         </label>
                         <div id="adminChoiceList" class="choice-editor-list"></div>
                         <button type="button" class="btn-secondary btn-add-choice" id="btnAddChoice">➕ เพิ่มตัวเลือก (Slide)</button>
-                        <small style="color:#94A3B8; font-size:12px; margin-top:6px; display:block;">💡 ติ๊กช่อง "เฉลย" ข้างตัวเลือกที่ถูกต้อง — เลือกเป็นวงกลมสีให้นักเรียนแตะตอบ</small>
+                        <small style="color:#94A3B8; font-size:12px; margin-top:6px; display:block;">💡 ติ๊กช่อง "เฉลย" ข้างตัวเลือกที่ถูกต้อง — เลือกเป็นวงกลมสีให้นักเรียนแตะตอบ — กดปุ่ม "∑" ข้างตัวเลือกเพื่อเปลี่ยนเป็นโหมดพิมพ์สูตร LaTeX</small>
+                        <div class="math-kb choice-kb" id="choiceMathKb">
+                            <button class="kb-btn" onclick="adminIns('\frac{#@}{#?}')">a/b</button>
+                            <button class="kb-btn" onclick="adminIns('\sqrt{#@}')">√</button>
+                            <button class="kb-btn" onclick="adminIns('\sqrt[3]{#@}')">∛</button>
+                            <button class="kb-btn" onclick="adminIns('^{#?}')">x<sup>n</sup></button>
+                            <button class="kb-btn" onclick="adminIns('_{#?}')">x<sub>n</sub></button>
+                            <button class="kb-btn" onclick="adminIns('^{2}')">x²</button>
+                            <button class="kb-btn" onclick="adminIns('^{3}')">x³</button>
+                            <button class="kb-btn" onclick="adminIns('\pi')">π</button>
+                            <button class="kb-btn" onclick="adminIns('\alpha')">α</button>
+                            <button class="kb-btn" onclick="adminIns('\beta')">β</button>
+                            <button class="kb-btn" onclick="adminIns('\theta')">θ</button>
+                            <button class="kb-btn" onclick="adminIns('\infty')">∞</button>
+                            <button class="kb-btn" onclick="adminIns('\times')">×</button>
+                            <button class="kb-btn danger" onclick="clearActiveAdminAnswer()">ล้าง</button>
+                        </div>
                     </div>
                 </div>
             </div>
             <div class="solution-box">
                 <div class="solution-box-title">📖 เฉลยละเอียด (วิธีทำ / อธิบาย)</div>
+                <small style="color:#94A3B8; font-size:12px; margin-bottom:8px; display:block;">💡 พิมพ์สมการแบบ KaTeX ได้โดยครอบด้วย <code>$...$</code> (ในบรรทัด) หรือ <code>$$...$$</code> (แยกบรรทัด) เช่น <code>$x = \frac{-b}{2a}$</code> — หรือจะ<strong>อัพโหลดรูปภาพเฉลย</strong>แทนการพิมพ์ก็ได้ (ใช้อย่างใดอย่างหนึ่ง หรือทั้งสองอย่างพร้อมกันก็ได้)</small>
                 <div class="question-input-wrap">
-                    <textarea id="adminQSolution" rows="5" placeholder="พิมพ์วิธีทำ / อธิบายขั้นตอน / แนวคิดของข้อนี้..."></textarea>
+                    <textarea id="adminQSolution" rows="5" placeholder="พิมพ์วิธีทำ / อธิบายขั้นตอน / แนวคิดของข้อนี้... (ใส่สมการด้วย $...$ ได้)"></textarea>
                     <div class="math-kb" style="margin-top:8px;">
                         <button class="kb-btn" onclick="insertIntoTextarea('adminQSolution','½')">½</button>
                         <button class="kb-btn" onclick="insertIntoTextarea('adminQSolution','√')">√</button>
@@ -626,8 +678,23 @@
                         <button class="kb-btn" onclick="insertIntoTextarea('adminQSolution','∵')">∵</button>
                         <button class="kb-btn" onclick="insertIntoTextarea('adminQSolution','→')">→</button>
                         <button class="kb-btn" onclick="insertIntoTextarea('adminQSolution','⟹')">⟹</button>
-                        <button class="kb-btn danger" onclick="document.getElementById('adminQSolution').value=''">ล้าง</button>
+                        <button class="kb-btn" onclick="insertIntoTextarea('adminQSolution','$$')">$…$</button>
+                        <button class="kb-btn danger" onclick="document.getElementById('adminQSolution').value=''; renderAdminSolutionPreview();">ล้าง</button>
                     </div>
+                    <div id="adminQSolutionPreviewWrap" style="margin-top:10px; display:none;">
+                        <label style="font-size:12px; color:#64748B; margin-bottom:4px;">👁️ ตัวอย่างที่นักเรียนจะเห็น:</label>
+                        <div id="adminQSolutionPreview" style="background:#FFFBF0; border:1px dashed var(--accent); border-radius:8px; padding:12px 14px; font-size:15px; line-height:1.7; min-height:20px;"></div>
+                    </div>
+                </div>
+                <div class="form-group" style="margin-top:16px;">
+                    <label>หรืออัพโหลดรูปภาพเฉลย (ใช้แทน/เสริมข้อความด้านบน):</label>
+                    <div class="img-upload-area" id="solImgUploadArea" onclick="document.getElementById('adminQSolutionImageFile').click()">
+                        <input type="file" id="adminQSolutionImageFile" accept="image/*">
+                        <div class="img-upload-label">📷 <span>แตะที่นี่เพื่ออัพโหลดรูปเฉลยจากแกลอรี่</span><br><small style="color:#94A3B8;">รองรับ JPG, PNG, GIF</small></div>
+                        <img id="adminQSolutionImagePreview" class="img-preview img-zoomable" alt="ตัวอย่างรูปเฉลย" onclick="event.stopPropagation(); openImgZoom(this)">
+                        <button class="img-clear-btn" id="btnClearSolutionImage" onclick="clearAdminSolutionImage(event)">✕ ลบรูป</button>
+                    </div>
+                    <input type="hidden" id="adminQSolutionImageData">
                 </div>
             </div>
             <button class="btn-primary" id="btnAdminSaveQ" style="margin-top:20px;">💾 บันทึกโจทย์และเฉลยข้อนี้</button>
@@ -875,6 +942,7 @@
         const pos = start + val.length;
         el.focus();
         el.setSelectionRange(pos, pos);
+        el.dispatchEvent(new Event('input'));
     };
 
     document.getElementById('adminQImageFile').addEventListener('change', function(e) {
@@ -911,6 +979,72 @@
             window.clearAdminImage({ stopPropagation: () => {} });
         }
     }
+
+    // ============================================================
+    // เฉลยละเอียด (SOLUTION) — รูปภาพเฉลย + ตัวอย่าง KaTeX แบบ real-time
+    // ทำงานคู่ขนานกับข้อความเฉลย: ใส่ได้ทั้งข้อความ(+สมการ)และ/หรือรูปภาพ
+    // ============================================================
+    document.getElementById('adminQSolutionImageFile').addEventListener('change', async function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = async function(ev) {
+            // บีบอัดรูปเฉลยก่อนเก็บ เพื่อไม่ให้ฐานข้อมูลบวมเหมือนรูปต้นฉบับจากกล้อง
+            const compressed = await compressImage(ev.target.result, 1200, 0.8);
+            document.getElementById('adminQSolutionImageData').value = compressed;
+            const preview = document.getElementById('adminQSolutionImagePreview');
+            preview.src = compressed; preview.style.display = 'block';
+            document.getElementById('btnClearSolutionImage').style.display = 'inline-block';
+            document.querySelector('#solImgUploadArea .img-upload-label').style.display = 'none';
+        };
+        reader.readAsDataURL(file);
+    });
+    window.clearAdminSolutionImage = function(e) {
+        if (e) e.stopPropagation();
+        document.getElementById('adminQSolutionImageData').value = '';
+        document.getElementById('adminQSolutionImageFile').value = '';
+        const preview = document.getElementById('adminQSolutionImagePreview');
+        preview.src = ''; preview.style.display = 'none';
+        document.getElementById('btnClearSolutionImage').style.display = 'none';
+        document.querySelector('#solImgUploadArea .img-upload-label').style.display = 'block';
+    };
+    function setAdminSolutionImagePreview(src) {
+        if (src && src.trim() !== '') {
+            document.getElementById('adminQSolutionImageData').value = src;
+            const preview = document.getElementById('adminQSolutionImagePreview');
+            preview.src = src; preview.style.display = 'block';
+            document.getElementById('btnClearSolutionImage').style.display = 'inline-block';
+            document.querySelector('#solImgUploadArea .img-upload-label').style.display = 'none';
+        } else {
+            window.clearAdminSolutionImage(null);
+        }
+    }
+    // เดลิมิเตอร์กลางสำหรับ KaTeX auto-render ใช้ร่วมกันทุกจุดที่แสดงเฉลย
+    // (แผงแอดมิน / หน้าดูเฉลยผู้เล่น / ไฟล์พิมพ์ PDF) เพื่อให้พิมพ์ครั้งเดียวแล้วแสดงผลตรงกันทุกที่
+    window.KATEX_SOLUTION_DELIMITERS = [
+        { left: '$$', right: '$$', display: true },
+        { left: '\\[', right: '\\]', display: true },
+        { left: '$', right: '$', display: false },
+        { left: '\\(', right: '\\)', display: false }
+    ];
+    let solutionPreviewTimer = null;
+    window.renderAdminSolutionPreview = function() {
+        clearTimeout(solutionPreviewTimer);
+        solutionPreviewTimer = setTimeout(() => {
+            const raw = document.getElementById('adminQSolution').value;
+            const wrap = document.getElementById('adminQSolutionPreviewWrap');
+            const box = document.getElementById('adminQSolutionPreview');
+            if (!raw || raw.trim() === '') { wrap.style.display = 'none'; box.innerHTML = ''; return; }
+            wrap.style.display = 'block';
+            box.innerHTML = escapeHtml(raw).replace(/\n/g, '<br>');
+            try {
+                if (window.renderMathInElement) {
+                    renderMathInElement(box, { delimiters: window.KATEX_SOLUTION_DELIMITERS, throwOnError: false });
+                }
+            } catch (e) {}
+        }, 250);
+    };
+    document.getElementById('adminQSolution').addEventListener('input', window.renderAdminSolutionPreview);
 
     // Multiple correct answers for Admin. Keeps old correctAnswer data compatible.
     window.activeAdminAnswerField = null;
@@ -979,29 +1113,72 @@
         const items = (choices && choices.length) ? choices : [{ id: newChoiceId(), text: '', color: CHOICE_COLORS[0], correct: false }, { id: newChoiceId(), text: '', color: CHOICE_COLORS[1], correct: false }];
         items.forEach(item => addAdminChoiceRow(item));
     }
+    // Builds either a plain text input or a MathLive <math-field> for a
+    // choice row's answer text, depending on whether that choice is in
+    // LaTeX mode. Both share the same "choice-text-input" class so the
+    // rest of the code (getAdminChoicesData, focus tracking, etc.) can
+    // read/write ".value" without caring which one is present.
+    function buildChoiceTextField(isLatex, value) {
+        const field = document.createElement(isLatex ? 'math-field' : 'input');
+        field.className = 'choice-text-input';
+        if (!isLatex) { field.type = 'text'; field.placeholder = 'ข้อความตัวเลือก...'; }
+        field.value = value || '';
+        field.addEventListener('focusin', () => { window.activeAdminAnswerField = field; });
+        return field;
+    }
+    function updateChoiceKbVisibility() {
+        const kb = document.getElementById('choiceMathKb');
+        if (!kb) return;
+        const anyLatex = !!document.querySelector('#adminChoiceList .choice-editor-row[data-is-latex="true"]');
+        kb.classList.toggle('visible', anyLatex);
+    }
+    // Toggles a single choice row between plain-text and LaTeX (math-field)
+    // input, preserving whatever was already typed.
+    function toggleChoiceLatexMode(row) {
+        const wasLatex = row.getAttribute('data-is-latex') === 'true';
+        const nowLatex = !wasLatex;
+        const wrap = row.querySelector('.choice-input-wrap');
+        const oldField = row.querySelector('.choice-text-input');
+        const value = oldField ? String(oldField.value || '') : '';
+        row.setAttribute('data-is-latex', nowLatex ? 'true' : 'false');
+        const newField = buildChoiceTextField(nowLatex, value);
+        wrap.innerHTML = '';
+        wrap.appendChild(newField);
+        row.querySelector('.btn-choice-latex').classList.toggle('active', nowLatex);
+        window.activeAdminAnswerField = newField;
+        newField.focus();
+        updateChoiceKbVisibility();
+    }
     function addAdminChoiceRow(item) {
         item = item || {};
         const list = document.getElementById('adminChoiceList');
         if (!list) return;
         const id = item.id || newChoiceId();
         const color = item.color || CHOICE_COLORS[list.children.length % CHOICE_COLORS.length];
+        const isLatex = !!item.isLatex;
         const row = document.createElement('div');
         row.className = 'choice-editor-row';
         row.setAttribute('data-choice-id', id);
+        row.setAttribute('data-is-latex', isLatex ? 'true' : 'false');
         const isMulti = !!document.getElementById('adminChoiceMultiSelect').checked;
         row.innerHTML = `
             <span class="choice-color-dot" style="background:${color};"></span>
-            <input type="text" class="choice-text-input" placeholder="ข้อความตัวเลือก..." value="${(item.text || '').replace(/"/g, '&quot;')}">
+            <div class="choice-input-wrap"></div>
+            <button type="button" class="btn-choice-latex${isLatex ? ' active' : ''}" title="สลับโหมด LaTeX สำหรับตัวเลือกนี้">∑</button>
             <label class="choice-mark-correct">
                 <input type="${isMulti ? 'checkbox' : 'radio'}" name="choiceCorrectRadio" class="choice-correct-input" ${item.correct ? 'checked' : ''}>
                 เฉลย
             </label>
             <button type="button" class="btn-remove-choice" title="ลบตัวเลือกนี้">✕</button>`;
+        row.querySelector('.choice-input-wrap').appendChild(buildChoiceTextField(isLatex, item.text));
+        row.querySelector('.btn-choice-latex').addEventListener('click', () => toggleChoiceLatexMode(row));
         row.querySelector('.btn-remove-choice').addEventListener('click', () => {
             if (list.children.length <= 2) { alert('ต้องมีตัวเลือกอย่างน้อย 2 ข้อ'); return; }
             row.remove();
+            updateChoiceKbVisibility();
         });
         list.appendChild(row);
+        updateChoiceKbVisibility();
     }
     document.getElementById('btnAddChoice').addEventListener('click', () => {
         addAdminChoiceRow({ color: CHOICE_COLORS[document.getElementById('adminChoiceList').children.length % CHOICE_COLORS.length] });
@@ -1023,8 +1200,9 @@
         const rows = Array.from(document.querySelectorAll('#adminChoiceList .choice-editor-row'));
         const choices = rows.map(row => ({
             id: row.getAttribute('data-choice-id'),
-            text: row.querySelector('.choice-text-input').value.trim(),
-            color: row.querySelector('.choice-color-dot').style.background
+            text: String(row.querySelector('.choice-text-input').value || '').trim(),
+            color: row.querySelector('.choice-color-dot').style.background,
+            isLatex: row.getAttribute('data-is-latex') === 'true'
         })).filter(c => c.text !== '');
         const correctIds = rows.filter(row => row.querySelector('.choice-correct-input').checked)
             .map(row => row.getAttribute('data-choice-id'))
@@ -1137,6 +1315,16 @@
             return String(latex).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
         }
     }
+    function escapeHtml(s) {
+        return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+    // Renders a single choice's label for display: LaTeX choices go through
+    // KaTeX (same renderer used for LiveMath answers), plain-text choices
+    // are HTML-escaped as usual.
+    function renderChoiceLabel(choice) {
+        if (!choice) return '';
+        return choice.isLatex ? renderLatexSafe(choice.text) : escapeHtml(choice.text);
+    }
     // Detects whether a plain-text answer actually contains LaTeX syntax
     // (e.g. a student typed \sigma, \frac{a}{b}, \theta, etc. into a
     // text-type answer box). If so we should render it with KaTeX instead
@@ -1152,11 +1340,11 @@
             if (!Array.isArray(ids)) ids = [];
             const labels = ids.map(id => {
                 const c = (qData.choices || []).find(ch => ch.id === id);
-                return c ? c.text : '';
+                return c ? renderChoiceLabel(c) : '';
             }).filter(t => t !== '');
             return labels.length
-                ? labels.map(t => t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')).join(', ')
-                : String(rawAns).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+                ? labels.join(', ')
+                : escapeHtml(rawAns);
         }
         if (qData && qData.answerType === 'text' && !looksLikeLatex(rawAns)) {
             return String(rawAns).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -1215,6 +1403,8 @@
         currentPlayerName = name;
         document.getElementById('displayPlayerName').innerText = name;
         document.getElementById('displayPlayerNameQuiz').innerText = name;
+        const reviewNameEl = document.getElementById('displayPlayerNameReview');
+        if (reviewNameEl) reviewNameEl.innerText = name;
         refreshPlayerScoreSummaries();
         renderPlayerTabs(); renderPlayerQuizzes();
         switchView('view-player-dashboard');
@@ -1856,6 +2046,8 @@
         renderAdminChoiceList([]);
         document.getElementById('adminQSolution').value = "";
         setAdminImagePreview('');
+        setAdminSolutionImagePreview('');
+        renderAdminSolutionPreview();
         const base = document.getElementById('manageBaseScoreInput')?.value;
         document.getElementById('adminQScore').value = (!base || base === "-") ? "5" : base;
     }
@@ -1873,13 +2065,15 @@
         document.getElementById('adminChoiceMultiSelect').checked = !!data.multiSelect;
         if (qAnswerType === 'choice' && Array.isArray(data.choices) && data.choices.length) {
             const correctIds = Array.isArray(data.correctChoiceIds) ? data.correctChoiceIds : [];
-            renderAdminChoiceList(data.choices.map(c => ({ id: c.id, text: c.text, color: c.color, correct: correctIds.includes(c.id) })));
+            renderAdminChoiceList(data.choices.map(c => ({ id: c.id, text: c.text, color: c.color, correct: correctIds.includes(c.id), isLatex: !!c.isLatex })));
         } else {
             renderAdminChoiceList([]);
         }
         document.getElementById('adminQScore').value = data.score || "5";
         document.getElementById('adminQSolution').value = data.solution || "";
         setAdminImagePreview(data.imageData || data.imageUrl || '');
+        setAdminSolutionImagePreview(data.solutionImageData || '');
+        renderAdminSolutionPreview();
         renderAdminQuestionNodes();
     }
 
@@ -1897,6 +2091,7 @@
         const text = document.getElementById('adminQText').value.trim();
         const scr = document.getElementById('adminQScore').value.trim();
         const sol = document.getElementById('adminQSolution').value.trim();
+        const solImg = document.getElementById('adminQSolutionImageData').value.trim();
         if (!text) { alert('กรุณาระบุเนื้อคำถามด้วยครับ'); return; }
         const answerType = getAdminAnswerType();
         let payload;
@@ -1908,7 +2103,7 @@
                 questionNumber: num, imageData: imageData, imageUrl: '',
                 questionText: text, correctAnswer: '', correctAnswers: [], matchMode: 'exact',
                 answerType: 'choice', choices: choiceData.choices, multiSelect: choiceData.multiSelect,
-                correctChoiceIds: choiceData.correctIds, score: scr, solution: sol
+                correctChoiceIds: choiceData.correctIds, score: scr, solution: sol, solutionImageData: solImg
             };
         } else {
             const answers = getAdminCorrectAnswers();
@@ -1919,7 +2114,7 @@
                 questionNumber: num, imageData: imageData, imageUrl: '',
                 questionText: text, correctAnswer: ans, correctAnswers: answers, matchMode: matchMode,
                 answerType: answerType, choices: [], multiSelect: false, correctChoiceIds: [],
-                score: scr, solution: sol
+                score: scr, solution: sol, solutionImageData: solImg
             };
         }
         if (!qid) qid = push(ref(database, `quizzes/${currentQuizId}/questions`)).key;
@@ -1999,6 +2194,8 @@
             const q = currentQuizQuestions[qid];
             const imgSrc = q.imageData || q.imageUrl || '';
             const hasSol = q.solution && q.solution.trim() !== '';
+            const solImgSrc = q.solutionImageData || '';
+            const hasSolImg = solImgSrc.trim() !== '';
             const answerList = getCorrectAnswersFromQuestion(q).filter(v => String(v || '').trim() !== '');
             const hasAns = answerList.length > 0;
             // LiveMath answers are rendered through KaTeX so they show up as a
@@ -2020,14 +2217,22 @@
                 <div class="q-text">${(q.questionText||'').replace(/</g,'&lt;')}</div>
                 <div class="solution-section">
                     ${hasAns ? `<div class="solution-label">✅ คำตอบ:</div><div class="solution-answer">${answerHtml}</div>` : ''}
-                    ${hasSol ? `<div class="solution-label">📖 วิธีทำ / เฉลยละเอียด:</div><div class="solution-text">${(q.solution||'').replace(/</g,'&lt;')}</div>` : '<div style="color:#94A3B8;font-size:14px;">— ยังไม่มีเฉลยละเอียดสำหรับข้อนี้ —</div>'}
+                    ${(hasSol || hasSolImg) ? `<div class="solution-label">📖 วิธีทำ / เฉลยละเอียด:</div>
+                        ${hasSolImg ? `<img class="q-img" src="${solImgSrc}" alt="รูปภาพเฉลย">` : ''}
+                        ${hasSol ? `<div class="solution-text">${(q.solution||'').replace(/</g,'&lt;').replace(/\n/g,'<br>')}</div>` : ''}
+                        ` : '<div style="color:#94A3B8;font-size:14px;">— ยังไม่มีเฉลยละเอียดสำหรับข้อนี้ —</div>'}
                 </div>
             </div>`;
         });
         html += `<script>
             window.addEventListener('load', function() {
                 renderMathInElement(document.body, {
-                    delimiters: [{left: '\\\\(', right: '\\\\)', display: false}],
+                    delimiters: [
+                        {left: '$$', right: '$$', display: true},
+                        {left: '\\\\[', right: '\\\\]', display: true},
+                        {left: '$', right: '$', display: false},
+                        {left: '\\\\(', right: '\\\\)', display: false}
+                    ],
                     throwOnError: false
                 });
             });
@@ -2083,6 +2288,9 @@
             if (!isQuizVisibleToStudents(data)) return;
             count++;
             const quizScore = getPlayerQuizScore(id);
+            const submitMode = data.submitMode || 'unlimited';
+            const existingSession = getPlayerSessionForQuiz(id);
+            const isDoneOnce = submitMode === 'once' && existingSession && isOnceQuizCompleted(id, existingSession[1]);
             const card = document.createElement('div');
             card.className = 'quiz-card';
             card.innerHTML = `
@@ -2090,14 +2298,20 @@
                     <h4 style="margin:0 0 10px 0; color:var(--primary-dark);">${data.examName}</h4>
                     <p style="margin:5px 0; font-size:13px;">หมวดวิชา: <b>${data.subject}</b></p>
                     <div class="score-box" style="margin:10px 0 12px;">🏆 คะแนนที่ได้: ${quizScore} คะแนน</div>
+                    ${isDoneOnce ? `<p style="margin:5px 0; font-size:12px; color:#22C55E; font-weight:600;">✅ ส่งคำตอบครบแล้ว</p>` : ''}
                 </div>
-                <button class="btn-primary start-quiz" data-id="${id}" style="margin-top:15px; font-size:14px; background-color:var(--primary-light); color:black;">Enter เข้าทำข้อสอบ ➔</button>
+                ${isDoneOnce
+                    ? `<button class="btn-primary review-quiz" data-id="${id}" style="margin-top:15px; font-size:14px; background-color:#0891B2; color:white;">📊 ดูผลคะแนน/เฉลย</button>`
+                    : `<button class="btn-primary start-quiz" data-id="${id}" style="margin-top:15px; font-size:14px; background-color:var(--primary-light); color:black;">Enter เข้าทำข้อสอบ ➔</button>`}
             `;
             container.appendChild(card);
         });
         if (count === 0) container.innerHTML = `<p style="grid-column:span 4; text-align:center; color:#888;">ไม่มีวิชา ${selectedSubjectFilter} เปิดอยู่ในขณะนี้</p>`;
         container.querySelectorAll('.start-quiz').forEach(b => {
             b.addEventListener('click', (e) => { startPlayerQuiz(e.currentTarget.getAttribute('data-id')); });
+        });
+        container.querySelectorAll('.review-quiz').forEach(b => {
+            b.addEventListener('click', (e) => { openPlayerReview(e.currentTarget.getAttribute('data-id')); });
         });
     }
     function getSortedQuestionIdsFromData(questions) {
@@ -2118,6 +2332,97 @@
         const rawAnswers = sessionData?.answers_raw || {};
         return qIds.every(qid => rawAnswers[qid] !== undefined);
     }
+    // ============================================================
+    // PLAYER REVIEW (submit-once quizzes: view own correct/wrong + solutions)
+    // ============================================================
+    function getCorrectAnswerDisplayHtml(q) {
+        if (q.answerType === 'choice') {
+            const ids = Array.isArray(q.correctChoiceIds) ? q.correctChoiceIds : [];
+            const labels = ids.map(id => {
+                const c = (q.choices || []).find(ch => ch.id === id);
+                return c ? renderChoiceLabel(c) : '';
+            }).filter(t => t !== '');
+            return labels.join(', ');
+        }
+        const answerList = getCorrectAnswersFromQuestion(q).filter(v => String(v || '').trim() !== '');
+        if (!answerList.length) return '';
+        const isTextType = q.answerType === 'text';
+        return isTextType
+            ? answerList.map(a => escapeHtml(a)).join(' &nbsp;หรือ&nbsp; ')
+            : answerList.map(a => renderLatexSafe(a)).join(' &nbsp;หรือ&nbsp; ');
+    }
+    function openPlayerReview(quizId) {
+        currentQuizId = quizId;
+        const quizData = globalQuizzes[quizId] || {};
+        document.getElementById('reviewQuizTitle').innerText = `ผลคะแนน/เฉลย: ${quizData.examName || ''}`;
+        const nameEl = document.getElementById('displayPlayerNameReview');
+        if (nameEl) nameEl.innerText = currentPlayerName;
+        const session = getPlayerSessionForQuiz(quizId);
+        const sessionData = session ? (session[1] || {}) : {};
+        onValue(ref(database, `quizzes/${quizId}/questions`), (snap) => {
+            renderPlayerReview(snap.val() || {}, sessionData);
+        });
+        switchView('view-player-review');
+    }
+    function renderPlayerReview(questions, sessionData) {
+        const container = document.getElementById('reviewQuestionList');
+        if (!container) return;
+        container.innerHTML = '';
+        const badgeEl = document.getElementById('reviewScoreBadge');
+        if (badgeEl) badgeEl.innerText = `คะแนนรวม: ${sessionData.totalScore || 0} คะแนน`;
+        const qIds = getSortedQuestionIdsFromData(questions);
+        if (qIds.length === 0) {
+            container.innerHTML = `<p style="text-align:center; color:#888;">ไม่มีข้อสอบย่อยในชุดนี้</p>`;
+            return;
+        }
+        const answers = sessionData.answers || {};
+        const rawAnswers = sessionData.answers_raw || {};
+        qIds.forEach(qid => {
+            const q = questions[qid] || {};
+            const attempted = rawAnswers[qid] !== undefined;
+            const graded = hasCorrectAnswer(q);
+            const isCorrect = answers[qid] === true;
+            let statusClass = 'unattempted', statusLabel = '— ไม่ได้ตอบ —';
+            if (attempted) {
+                if (!graded) { statusClass = 'ungraded'; statusLabel = '⏳ รอครูตรวจ / ยังไม่มีเฉลย'; }
+                else if (isCorrect) { statusClass = 'correct'; statusLabel = '✅ ถูกต้อง'; }
+                else { statusClass = 'wrong'; statusLabel = '❌ ไม่ถูกต้อง'; }
+            }
+            const imgSrc = q.imageData || q.imageUrl || '';
+            const studentAnswerHtml = attempted ? formatRawAnswerForDisplay(q, rawAnswers[qid]) : '<span style="color:#94A3B8;">— ไม่ได้ตอบข้อนี้ —</span>';
+            const correctAnswerHtml = getCorrectAnswerDisplayHtml(q);
+            const hasSol = q.solution && String(q.solution).trim() !== '';
+            const solImgSrc = q.solutionImageData || '';
+            const hasSolImg = solImgSrc.trim() !== '';
+            const item = document.createElement('div');
+            item.className = 'review-item';
+            item.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
+                    <h4 style="margin:0;">ข้อที่ ${q.questionNumber ?? ''} <span style="font-weight:400; font-size:13px; color:#64748B;">(${q.score || 5} คะแนน)</span></h4>
+                    <span class="review-status-badge ${statusClass}">${statusLabel}</span>
+                </div>
+                ${imgSrc ? `<img src="${imgSrc}" class="quiz-img" alt="รูปภาพประกอบโจทย์">` : ''}
+                <p style="font-size:16px; line-height:1.6; background:#FAF9F5; padding:14px; border-radius:8px; border-left:4px solid var(--accent);">${escapeHtml(q.questionText || '')}</p>
+                <div class="review-answer-box your-answer ${attempted && graded ? statusClass : ''}">
+                    <span class="review-answer-label">คำตอบของคุณ:</span>${studentAnswerHtml}
+                </div>
+                ${graded ? `<div class="review-answer-box correct-answer"><span class="review-answer-label">✅ เฉลยที่ถูกต้อง:</span>${correctAnswerHtml || '<span style="color:#94A3B8;">—</span>'}</div>` : ''}
+                ${(hasSol || hasSolImg)
+                    ? `<div class="solution-box"><div class="solution-box-title">📖 เฉลยละเอียด (วิธีทำ / อธิบาย)</div>
+                        ${hasSolImg ? `<img src="${solImgSrc}" class="quiz-img" alt="รูปภาพเฉลย">` : ''}
+                        ${hasSol ? `<div class="solution-text-render">${escapeHtml(q.solution).replace(/\n/g, '<br>')}</div>` : ''}
+                       </div>`
+                    : `<div style="color:#94A3B8; font-size:13px; margin-top:10px;">— ยังไม่มีเฉลยละเอียดสำหรับข้อนี้ —</div>`}
+            `;
+            container.appendChild(item);
+        });
+        // แปลงสมการ $...$ / \(...\) / $$...$$ ในเฉลยละเอียดให้เป็น KaTeX จริง
+        try {
+            if (window.renderMathInElement) {
+                renderMathInElement(container, { delimiters: window.KATEX_SOLUTION_DELIMITERS, throwOnError: false });
+            }
+        } catch (e) {}
+    }
     function startPlayerQuiz(quizId) {
         currentQuizId = quizId;
         currentActiveQuestionId = "";
@@ -2125,7 +2430,8 @@
         const quizSubmitMode = quizData.submitMode || 'unlimited';
         const existingSession = getPlayerSessionForQuiz(quizId);
         if (quizSubmitMode === 'once' && existingSession && isOnceQuizCompleted(quizId, existingSession[1])) {
-            alert('ชุดข้อสอบนี้ส่งครบแล้ว จึงไม่สามารถเข้าทำซ้ำได้');
+            alert('ชุดข้อสอบนี้ส่งครบแล้ว จึงไม่สามารถเข้าทำซ้ำได้ กำลังพาไปหน้าดูผลคะแนน/เฉลย');
+            openPlayerReview(quizId);
             return;
         }
         document.getElementById('playerQuizTitle').innerText = `ชุดข้อสอบ: ${quizData.examName}`;
@@ -2228,7 +2534,7 @@
             btn.className = 'player-choice-btn';
             btn.style.setProperty('--dot-color', choice.color || 'var(--primary)');
             if (window.playerSelectedChoiceIds.has(choice.id)) btn.classList.add('selected');
-            btn.innerHTML = `<span class="choice-circle"></span><span>${choice.text}</span>`;
+            btn.innerHTML = `<span class="choice-circle"></span><span>${renderChoiceLabel(choice)}</span>`;
             btn.addEventListener('click', () => {
                 if (isMulti) {
                     if (window.playerSelectedChoiceIds.has(choice.id)) window.playerSelectedChoiceIds.delete(choice.id);
@@ -2304,8 +2610,8 @@
         update(ref(database, `player_sessions/${currentSessionId}`), {
             answers: answersUpdate, answers_raw: rawAnswersUpdate, totalScore: newTotalScore, submitMode: quizSubmitMode, completed: isCompleted
         }).then(() => {
-            alert(isCompleted ? 'ส่งคำตอบครบทุกข้อแล้ว ระบบจะไม่อนุญาตให้เข้าทำชุดนี้ซ้ำ' : `ส่งคำตอบข้อที่ ${currentActiveQuestionNum} สำเร็จ!`);
-            if (isCompleted) switchView('view-player-dashboard');
+            alert(isCompleted ? 'ส่งคำตอบครบทุกข้อแล้ว! ระบบจะไม่อนุญาตให้เข้าทำชุดนี้ซ้ำ กำลังพาไปหน้าดูผลคะแนน/เฉลย' : `ส่งคำตอบข้อที่ ${currentActiveQuestionNum} สำเร็จ!`);
+            if (isCompleted) openPlayerReview(currentQuizId);
         });
     });
 
